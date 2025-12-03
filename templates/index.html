@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>MediCitas | Final</title>
+    <title>MediCitas | Agenda Clínica</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.8/index.global.min.js'></script>
@@ -15,225 +12,145 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
-        /* --- SOLUCIÓN VISUAL FINAL (Corregida) --- */
-
-        /* 1. Ocultar texto original de TODOS los botones */
-        .fc-button-primary {
-            font-size: 0 !important; /* Hace desaparecer el texto duplicado */
-            line-height: 0 !important;
-            min-width: 70px !important; /* Mantiene el ancho del botón */
-            position: relative;
-            display: inline-flex !important;
-            align-items: center;
-            justify-content: center;
-            height: 38px !important;
-        }
-
-        /* 2. Crear texto NUEVO y LIMPIO */
-        .fc-button-primary::after {
-            font-size: 14px !important; /* Restaura tamaño de letra */
-            line-height: 1.5 !important;
-            font-weight: 600;
-            color: white;
-            text-transform: capitalize;
-            position: absolute;
-        }
-
-        /* 3. Asignar nombres correctos a cada botón */
-        .fc-today-button::after { content: 'Hoy'; }
-        .fc-dayGridMonth-button::after { content: 'Mes'; }
-        
-        /* ¡AQUÍ ESTABA EL ERROR! Corregido a dayGridWeek */
-        .fc-dayGridWeek-button::after { content: 'Semana'; } 
-        
-        .fc-timeGridDay-button::after { content: 'Día'; }
-
-        /* 4. Flechas de navegación (No usan font-size 0 para no ocultar ícono) */
-        .fc-prev-button, .fc-next-button {
-            font-size: 14px !important; 
-            line-height: 1.5 !important;
-            min-width: 40px !important;
-            background-color: #10b981 !important;
-            border-color: #059669 !important;
-        }
-
-        /* --- ESTILOS GENERALES DEL CALENDARIO --- */
-        
-        /* Limpieza de horas duplicadas (7:007:00) */
-        .fc-timegrid-slot-label-cushion {
-            font-size: 0 !important; /* Ocultar original */
-        }
-        .fc-timegrid-slot-label-cushion::after {
-            content: attr(aria-label); /* Poner hora limpia */
-            font-size: 12px !important;
-            color: #64748b;
-        }
-
-        /* Colores y bordes */
-        .fc-button-active { background-color: #047857 !important; border-color: #047857 !important; }
+        .fc-toolbar-title > div { display: inline-block !important; }
+        .fc-button { text-transform: capitalize !important; font-weight: 600 !important; }
+        .fc-button-primary { background-color: #10b981 !important; border-color: #059669 !important; }
         .fc-timegrid-slot { height: 3.5em !important; }
         .fc-event { cursor: pointer; border: none; }
-        
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        /* Animación suave para el modal */
+        #modalContainer { transition: max-width 0.4s ease-in-out; }
+        #panelHistorial { transition: opacity 0.3s ease-in, transform 0.3s; }
     </style>
 </head>
 <body class="bg-slate-50 font-sans text-slate-800">
 
-    <nav class="bg-white shadow-sm border-b border-slate-200 px-6 py-3 flex justify-between items-center z-20 relative">
+    <nav class="bg-white shadow-sm border-b border-slate-200 px-6 py-3 flex justify-between items-center z-20">
         <div class="text-xl font-bold text-slate-700 flex items-center gap-2">
-            <span class="bg-emerald-500 text-white rounded p-1 text-sm">MC</span> 
-            Medi<span class="text-emerald-600">Citas</span>
+            <span class="bg-emerald-500 text-white rounded p-1 text-sm">MC</span> Medi<span class="text-emerald-600">Citas</span>
         </div>
-        <a href="/" class="text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Volver al Inicio
-        </a>
+        <a href="/" class="text-xs text-slate-400 hover:text-emerald-600">Volver al Inicio</a>
     </nav>
 
     <div class="flex flex-col md:flex-row h-[calc(100vh-60px)]">
-        
-        <div class="w-full md:w-72 bg-white border-r border-slate-200 p-5 flex flex-col gap-6 z-10 shadow-lg">
-            
+        <div class="w-full md:w-72 bg-white border-r border-slate-200 p-5 flex flex-col gap-6 shadow-lg">
             <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Especialista</label>
-                <select id="doctorSelect" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium text-slate-700">
+                <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Especialista</label>
+                <select id="doctorSelect" class="w-full p-3 bg-slate-50 border rounded-xl text-sm outline-none">
                     <option value="" disabled selected>Seleccione Doctor...</option>
                     {% for doctor in doctores %}
-                    <option value="{{ doctor.id }}" data-duracion="{{ doctor.duracion_cita }}">
-                        {{ doctor.nombre }} ({{ doctor.especialidad }})
-                    </option>
+                    <option value="{{ doctor.id }}" data-duracion="{{ doctor.duracion_cita }}">{{ doctor.nombre }}</option>
                     {% endfor %}
                 </select>
             </div>
-
-            <div id="panelRapido" class="bg-emerald-50 rounded-xl p-4 border border-emerald-100 hidden">
-                <div class="flex items-center gap-2 mb-3 text-emerald-800 border-b border-emerald-200 pb-2">
-                    <span class="text-sm font-bold">⏱ Agenda Express</span>
-                </div>
-                <div class="space-y-2">
-                    <label class="text-xs text-emerald-600">Hora Exacta (HH:MM):</label>
-                    <div class="flex gap-2">
-                        <input type="time" id="inputHoraRapida" step="60" class="flex-1 p-2 rounded-lg border border-emerald-200 text-sm font-mono focus:border-emerald-500 outline-none bg-white">
-                        <button onclick="usarReservaRapida()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 rounded-lg font-bold shadow-md transition-transform active:scale-95">IR</button>
-                    </div>
-                </div>
-            </div>
-            
             <div class="mt-auto bg-slate-50 p-3 rounded-lg border border-slate-100">
                 <p class="text-[10px] text-slate-400 font-bold mb-2 uppercase">Ayuda:</p>
-                <ul class="text-[11px] text-slate-500 space-y-1 list-disc pl-4">
-                    <li>Vista <b>Día</b> para detalles.</li>
-                    <li>Clic en celdas para agendar.</li>
+                <ul class="text-[11px] text-slate-500 list-disc pl-4">
+                    <li>Escribe el CI para buscar.</li>
+                    <li>Si ya existe, los datos se cargan solos.</li>
                 </ul>
             </div>
         </div>
-
         <div class="flex-grow bg-white p-2 md:p-4 overflow-hidden relative">
             <div id="calendar" class="h-full w-full"></div>
         </div>
     </div>
 
-    <div id="modal" class="fixed inset-0 bg-slate-900/60 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-slate-100 transform transition-all scale-100">
-            <div class="flex justify-between items-center mb-6">
+    <div id="modal" class="fixed inset-0 bg-slate-900/60 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity p-4">
+        
+        <div id="modalContainer" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 border border-slate-100 transform transition-all scale-100 max-h-[95vh] overflow-y-auto">
+            
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
                 <div>
-                    <h2 class="text-xl font-bold text-slate-800">Nueva Cita</h2>
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        📅 Gestión de Cita
+                    </h2>
                     <p class="text-xs text-emerald-600 font-medium mt-1 capitalize" id="modalFechaTitulo">Fecha</p>
                 </div>
-                <button onclick="cerrarModal()" class="text-slate-400 hover:text-red-500 text-2xl">&times;</button>
+                <button onclick="cerrarModal()" class="text-slate-400 hover:text-red-500 text-2xl leading-none">&times;</button>
             </div>
 
-            <form id="formCita" class="space-y-4">
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div class="flex gap-3 items-center">
+            <form id="formCita" class="flex flex-col md:flex-row gap-8">
+                
+                <div class="flex-1 space-y-4">
+                    <input type="hidden" id="citaId">
+
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex gap-3">
                         <div class="w-1/2">
-                            <label class="text-[10px] text-slate-400 mb-1 block uppercase font-bold">Inicio</label>
-                            <input type="time" id="horaInicioInput" step="60" class="w-full p-2 border border-emerald-300 rounded bg-white text-emerald-700 font-mono font-bold focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <label class="text-[10px] text-slate-400 block font-bold">INICIO</label>
+                            <input type="time" id="horaInicioInput" step="60" class="w-full p-1.5 bg-white border rounded font-mono font-bold outline-none focus:ring-1 focus:ring-emerald-500">
                         </div>
-                        <span class="text-slate-300">➜</span>
                         <div class="w-1/2">
-                            <label class="text-[10px] text-slate-400 mb-1 block uppercase font-bold">Fin</label>
-                            <input type="time" id="horaFinInput" step="60" class="w-full p-2 border border-emerald-300 rounded bg-white text-emerald-700 font-mono font-bold focus:ring-2 focus:ring-emerald-500 outline-none">
+                            <label class="text-[10px] text-slate-400 block font-bold">FIN</label>
+                            <input type="time" id="horaFinInput" class="w-full p-1.5 bg-white border rounded font-mono outline-none focus:ring-1 focus:ring-emerald-500">
                         </div>
                     </div>
-                </div>
 
-                <input type="hidden" id="citaId">
-
-                <div class="space-y-3">
-                    <div class="relative">
-                        <label class="text-xs text-slate-500 font-bold ml-1">Cédula de Identidad (Bolivia) - Buscar Paciente</label>
-                        <input type="number" id="ci" class="w-full bg-slate-50 border-b-2 border-slate-200 p-2 focus:border-emerald-500 focus:bg-white outline-none" required placeholder="Ej: 5678901">
-                        <span id="msgUsuarioEncontrado" class="hidden absolute right-0 top-0 text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-bold">
-                            ✓ Usuario Registrado
-                        </span>
-                    </div>
-
-                    <div>
-                        <label class="text-xs text-slate-500 font-bold ml-1">Nombre Completo</label>
-                        <input type="text" id="nombre" class="w-full bg-slate-50 border-b-2 border-slate-200 p-2 focus:border-emerald-500 focus:bg-white outline-none" required placeholder="Nombre del Paciente">
-                    </div>
-
-                    <div>
-                        <label class="text-xs text-slate-500 font-bold ml-1">Celular (Bolivia)</label>
+                    <div class="space-y-3">
                         <div class="relative">
-                            <span class="absolute left-2 top-2 text-slate-400 text-sm">+591</span>
-                            <input type="number" id="telefono" class="w-full bg-slate-50 border-b-2 border-slate-200 p-2 pl-12 focus:border-emerald-500 focus:bg-white outline-none" required placeholder="Ej: 70712345">
+                            <label class="text-xs font-bold text-slate-500">Cédula Identidad (Busca auto.)</label>
+                            <input type="number" id="ci" class="w-full bg-slate-50 border-b-2 p-2 outline-none focus:border-emerald-500 transition-colors" required placeholder="Ingrese CI...">
+                            <span id="msgUsuarioEncontrado" class="hidden absolute right-0 top-6 text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">✓ Encontrado</span>
                         </div>
-                        <p class="text-[10px] text-slate-400 mt-1 ml-1">* Debe iniciar con 6 o 7 y tener 8 dígitos.</p>
+
+                        <div>
+                            <label class="text-xs font-bold text-slate-500">Nombre Completo</label>
+                            <input type="text" id="nombre" class="w-full bg-slate-50 border-b-2 p-2 outline-none focus:border-emerald-500 transition-colors" required>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-slate-500">Celular</label>
+                            <div class="relative">
+                                <span class="absolute left-2 top-2 text-slate-400 text-sm">+591</span>
+                                <input type="number" id="telefono" class="w-full bg-slate-50 border-b-2 p-2 pl-12 outline-none focus:border-emerald-500 transition-colors" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="toggleHistorialSide()" id="btnToggleHistorial" class="w-full py-2 px-3 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold flex justify-between items-center hover:bg-blue-100 transition-colors border border-blue-100">
+                        <span>📋 Ver Expediente / Historial Médico</span>
+                        <span>👉</span>
+                    </button>
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-500">Motivo de Consulta</label>
+                        <textarea id="motivo" class="w-full bg-slate-50 border rounded-lg p-2 outline-none h-20 resize-none focus:ring-1 focus:ring-emerald-500" placeholder="Razón de la visita..."></textarea>
+                    </div>
+
+                    <div class="flex gap-2 pt-2">
+                        <button type="button" onclick="cerrarModal()" class="flex-1 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200">Cancelar</button>
+                        <button type="submit" id="btnGuardar" class="flex-1 py-2 bg-emerald-500 text-white rounded-lg text-sm font-bold hover:bg-emerald-600 shadow-md">Guardar</button>
+                        <button type="button" id="btnEditar" onclick="activarEdicion()" class="hidden flex-1 bg-blue-500 text-white rounded-lg text-sm font-bold shadow-md">Editar</button>
+                        <button type="button" id="btnEliminar" onclick="eliminarCita()" class="hidden flex-1 bg-red-500 text-white rounded-lg text-sm font-bold shadow-md">Borrar</button>
                     </div>
                 </div>
 
-                <!-- Panel Historial Médico Colapsable -->
-                <div class="border border-emerald-100 rounded-lg overflow-hidden mt-4">
-                    <button type="button" onclick="toggleHistorial()" class="w-full bg-emerald-50 p-3 text-left text-xs font-bold text-emerald-700 flex justify-between items-center hover:bg-emerald-100 transition-colors">
-                        <span>📋 Historial Médico / Datos Importantes del Paciente</span>
-                        <span id="iconHistorial">▼</span>
-                    </button>
-                    <div id="panelHistorial" class="hidden p-4 bg-white space-y-3">
-                        <p class="text-[10px] text-slate-400 mb-2 italic">⚕️ Edite esta información para actualizar el expediente clínico del paciente.</p>
+                <div id="panelHistorial" class="hidden w-full md:w-80 border-l-2 border-dashed border-slate-200 pl-0 md:pl-8 flex flex-col gap-4 bg-slate-50/50 rounded-r-xl">
+                    <div class="flex items-center gap-2 text-emerald-700 border-b pb-2 mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+                        <h3 class="font-bold text-sm">Expediente Clínico</h3>
+                    </div>
+
+                    <div class="space-y-4 text-sm">
+                        <div>
+                            <label class="block text-[10px] font-bold text-red-500 uppercase mb-1">⚠️ Alergias</label>
+                            <input type="text" id="alergias" class="w-full p-2 border border-red-100 bg-red-50 rounded text-slate-700 focus:border-red-300 outline-none" placeholder="Ninguna conocida">
+                        </div>
                         
                         <div>
-                            <label class="text-[10px] font-bold text-slate-500 uppercase">Alergias Conocidas</label>
-                            <input type="text" id="alergias" class="w-full p-2 border border-slate-200 rounded text-sm bg-slate-50" placeholder="Ej: Penicilina, Aines, Polen...">
+                            <label class="block text-[10px] font-bold text-blue-500 uppercase mb-1">🏥 Cirugías Previas</label>
+                            <input type="text" id="cirugias" class="w-full p-2 border border-blue-100 bg-blue-50 rounded text-slate-700 focus:border-blue-300 outline-none" placeholder="Ninguna">
                         </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-500 uppercase">Cirugías Previas</label>
-                            <input type="text" id="cirugias" class="w-full p-2 border border-slate-200 rounded text-sm bg-slate-50" placeholder="Ej: Apéndice (2010), Vesícula...">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-slate-500 uppercase">Notas Médicas Importantes</label>
-                            <textarea id="notas" class="w-full p-2 border border-slate-200 rounded text-sm h-20 resize-none bg-slate-50" placeholder="Ej: Hipertensión controlada, Diabético tipo 2..."></textarea>
+
+                        <div class="flex-grow flex flex-col">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📝 Notas Médicas / Antecedentes</label>
+                            <textarea id="notas" class="w-full flex-grow p-3 border border-slate-200 bg-white rounded text-slate-600 focus:border-emerald-300 outline-none resize-none min-h-[150px]" placeholder="Escriba aquí antecedentes importantes, medicación actual, etc..."></textarea>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-4">
-                    <label class="text-xs text-slate-500 font-bold ml-1">Motivo de Consulta Actual</label>
-                    <textarea id="motivo" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:border-emerald-500 outline-none resize-none h-20" placeholder="¿Por qué viene hoy?"></textarea>
-                </div>
-
-                <div class="flex gap-3 pt-4 border-t border-slate-100 mt-4">
-                    <button type="button" onclick="cerrarModal()" class="flex-1 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-semibold transition-colors">
-                        Cerrar
-                    </button>
-
-                    <button type="submit" id="btnGuardar" class="flex-1 py-2 text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg text-sm font-bold shadow-lg shadow-emerald-500/30 transition-all">
-                        Confirmar
-                    </button>
-
-                    <button type="button" id="btnEditar" onclick="activarEdicion()" class="hidden flex-1 py-2 text-white bg-blue-500 hover:bg-blue-600 rounded-lg text-sm font-bold shadow-md">
-                        ✏️ Editar
-                    </button>
-                    
-                    <button type="button" id="btnEliminar" onclick="borrarCitaNuevo()" class="hidden flex-1 py-2 text-white bg-red-500 hover:bg-red-600 rounded-lg text-sm font-bold shadow-md">
-                        🗑️ Borrar
-                    </button>
-                </div>
             </form>
         </div>
     </div>
@@ -241,516 +158,240 @@
     <script>
         let calendar;
         const modal = document.getElementById('modal');
+        const modalContainer = document.getElementById('modalContainer');
+        const panelHistorial = document.getElementById('panelHistorial');
         const doctorSelect = document.getElementById('doctorSelect');
-        const panelRapido = document.getElementById('panelRapido');
         const modalFechaTitulo = document.getElementById('modalFechaTitulo');
-        
         const horaInicioInput = document.getElementById('horaInicioInput');
         const horaFinInput = document.getElementById('horaFinInput');
-        const inputHoraRapida = document.getElementById('inputHoraRapida');
-
         let duracionDoctor = 30;
         let fechaActualDia = new Date();
 
-        // ========================================
-        // FUNCIONES GLOBALES (definidas primero)
-        // ========================================
-        
-        // Función para toggle del panel de historial
-        window.toggleHistorial = function() {
-            const panel = document.getElementById('panelHistorial');
-            const icon = document.getElementById('iconHistorial');
-            panel.classList.toggle('hidden');
-            icon.textContent = panel.classList.contains('hidden') ? '▼' : '▲';
+        // --- LÓGICA DE EXPANSIÓN LATERAL ---
+        function toggleHistorialSide(forceOpen = false) {
+            const isHidden = panelHistorial.classList.contains('hidden');
+            const btn = document.getElementById('btnToggleHistorial');
+
+            if (isHidden || forceOpen) {
+                // ABRIR (Expandir a la derecha)
+                modalContainer.classList.remove('max-w-lg');
+                modalContainer.classList.add('max-w-5xl'); // Ancho grande
+                
+                panelHistorial.classList.remove('hidden');
+                
+                btn.innerHTML = `<span>« Ocultar Expediente</span> <span>📕</span>`;
+                btn.classList.replace('bg-blue-50', 'bg-slate-100');
+                btn.classList.replace('text-blue-600', 'text-slate-600');
+            } else {
+                // CERRAR (Volver a normal)
+                panelHistorial.classList.add('hidden');
+                
+                modalContainer.classList.remove('max-w-5xl');
+                modalContainer.classList.add('max-w-lg'); // Ancho normal
+                
+                btn.innerHTML = `<span>📋 Ver Expediente / Historial Médico</span> <span>👉</span>`;
+                btn.classList.replace('bg-slate-100', 'bg-blue-50');
+                btn.classList.replace('text-slate-600', 'text-blue-600');
+            }
         }
-        
-        // Función para buscar paciente por CI (Autocompletado)
-        document.addEventListener('DOMContentLoaded', function() {
-            const ciInput = document.getElementById('ci');
-            
-            ciInput.addEventListener('blur', async function() {
-                const ci = this.value.trim();
-                if(ci.length > 4) {
-                    try {
-                        const res = await fetch(`/api/paciente/${ci}`);
-                        const data = await res.json();
-                        
-                        const msg = document.getElementById('msgUsuarioEncontrado');
-                        
-                        if(data.encontrado) {
-                            // Mostrar badge de usuario registrado
-                            msg.classList.remove('hidden');
-                            
-                            // Rellenar datos automáticamente
-                            document.getElementById('nombre').value = data.nombre;
-                            document.getElementById('telefono').value = data.telefono;
-                            document.getElementById('alergias').value = data.alergias;
-                            document.getElementById('cirugias').value = data.cirugias;
-                            document.getElementById('notas').value = data.notas;
-                            
-                            // Abrir historial automáticamente si hay datos importantes
-                            if(data.alergias !== 'Ninguna conocida' || data.cirugias !== 'Ninguna' || data.notas) {
-                                document.getElementById('panelHistorial').classList.remove('hidden');
-                                document.getElementById('iconHistorial').textContent = '▲';
-                            }
-                            
-                            Swal.fire({
-                                toast: true, 
-                                position: 'top-end', 
-                                icon: 'info', 
-                                title: '✓ Paciente Encontrado', 
-                                text: 'Datos cargados del sistema', 
-                                timer: 3000, 
-                                showConfirmButton: false
-                            });
-                        } else {
-                            msg.classList.add('hidden');
-                            // Limpiar solo los campos médicos si es nuevo
-                            document.getElementById('alergias').value = 'Ninguna conocida';
-                            document.getElementById('cirugias').value = 'Ninguna';
-                            document.getElementById('notas').value = '';
-                        }
-                    } catch(error) {
-                        console.error('Error buscando paciente:', error);
+
+        // --- BÚSQUEDA PACIENTE ---
+        document.getElementById('ci').addEventListener('blur', async function() {
+            const ci = this.value;
+            if(ci.length > 4) {
+                const res = await fetch(`/api/paciente/${ci}`);
+                const data = await res.json();
+                
+                const msg = document.getElementById('msgUsuarioEncontrado');
+                if(data.encontrado) {
+                    msg.classList.remove('hidden');
+                    document.getElementById('nombre').value = data.nombre;
+                    document.getElementById('telefono').value = data.telefono;
+                    document.getElementById('alergias').value = data.alergias;
+                    document.getElementById('cirugias').value = data.cirugias;
+                    document.getElementById('notas').value = data.notas;
+                    
+                    // Si tiene historial relevante, abrir automáticamente el panel lateral
+                    if(data.alergias || data.notas) {
+                        toggleHistorialSide(true);
                     }
+                    
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Paciente encontrado', showConfirmButton: false, timer: 2000 });
+                } else {
+                    msg.classList.add('hidden');
                 }
-            });
+            }
         });
-        
-        // Función para borrar cita (NUEVA VERSION CON LOGS)
-        window.borrarCitaNuevo = async function() {
-            const idInput = document.getElementById('citaId').value;
-            
-            console.log('🔍 [BORRADO] ID del input:', idInput);
-            
-            if (!idInput) {
-                Swal.fire('Error', 'No se encontró el ID de la cita', 'error');
-                return;
-            }
 
-            const result = await Swal.fire({
-                title: '¿Estás seguro?',
-                text: "Esto borrará la cita permanentemente.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Sí, borrar',
-                cancelButtonText: 'Cancelar'
-            });
+        // --- GESTIÓN DE MODOS ---
+        function resetearFormulario(modo) {
+            const form = document.getElementById('formCita');
+            const inputs = form.querySelectorAll('input:not([type=hidden]), textarea');
+            document.getElementById('msgUsuarioEncontrado').classList.add('hidden');
             
-            if (result.isConfirmed) {
-                const idNumerico = parseInt(idInput);
-                console.log('🔍 [BORRADO] ID convertido a número:', idNumerico);
-                
-                const formData = new FormData();
-                formData.append('cita_id', idNumerico);
-                
-                console.log('🔍 [BORRADO] FormData preparado');
+            // Siempre resetear al estado "cerrado" (angosto)
+            panelHistorial.classList.add('hidden');
+            modalContainer.classList.remove('max-w-5xl');
+            modalContainer.classList.add('max-w-lg');
+            const btn = document.getElementById('btnToggleHistorial');
+            btn.innerHTML = `<span>📋 Ver Expediente / Historial Médico</span> <span>👉</span>`;
 
-                try {
-                    console.log('📤 [BORRADO] Enviando POST a /borrar...');
-                    const response = await fetch('/borrar', { 
-                        method: 'POST', 
-                        body: formData 
-                    });
-                    
-                    console.log('📥 [BORRADO] Respuesta HTTP:', response.status);
-                    
-                    if (response.ok) {
-                        cerrarModal();
-                        doctorSelect.dispatchEvent(new Event('change'));
-                        Swal.fire('Eliminado', 'La cita ha sido borrada.', 'success');
-                    } else {
-                        const data = await response.json();
-                        console.log('❌ [BORRADO] Error del servidor:', data);
-                        Swal.fire('Error', data.msg || 'Error al borrar', 'error');
-                    }
-                } catch(e) { 
-                    console.error('❌ [BORRADO] Excepción:', e);
-                    Swal.fire('Error', 'Fallo de conexión con el servidor', 'error'); 
-                }
+            if (modo === 'nuevo') {
+                document.getElementById('citaId').value = '';
+                form.reset();
+                inputs.forEach(i => i.disabled = false);
+                document.getElementById('btnGuardar').classList.remove('hidden');
+                document.getElementById('btnEditar').classList.add('hidden');
+                document.getElementById('btnEliminar').classList.add('hidden');
+            } else { // Ver
+                inputs.forEach(i => i.disabled = true);
+                document.getElementById('btnGuardar').classList.add('hidden');
+                document.getElementById('btnEditar').classList.remove('hidden');
+                document.getElementById('btnEliminar').classList.remove('hidden');
+                
+                // Habilitar botón de historial aunque esté en modo lectura para poder verlo
+                document.getElementById('btnToggleHistorial').disabled = false;
             }
         }
 
-        // Función para activar edición
         window.activarEdicion = function() {
-            const inputs = document.querySelectorAll('#formCita input:not([type=hidden]), #formCita textarea');
-            inputs.forEach(i => i.disabled = false);
-            
+            document.querySelectorAll('#formCita input, #formCita textarea').forEach(i => i.disabled = false);
             document.getElementById('btnEditar').classList.add('hidden');
             document.getElementById('btnEliminar').classList.add('hidden');
             document.getElementById('btnGuardar').classList.remove('hidden');
-            document.getElementById('btnGuardar').innerText = "Guardar Cambios";
         }
 
-        // Función para cerrar modal
-        window.cerrarModal = function() {
-            modal.classList.add('hidden');
-            resetearFormulario('nuevo');
+        window.eliminarCita = async function() {
+            const id = document.getElementById('citaId').value;
+            const res = await Swal.fire({ title: '¿Borrar?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Sí' });
+            if (res.isConfirmed) {
+                const fd = new FormData(); fd.append('cita_id', id);
+                await fetch('/borrar', { method: 'POST', body: fd });
+                cerrarModal(); doctorSelect.dispatchEvent(new Event('change'));
+                Swal.fire('Borrado', '', 'success');
+            }
         }
-
-        // ==== VERIFICACIÓN DE VERSIÓN ====
-        console.log('🚀 MediCitas cargado - Versión: 2025-12-03-BORRADO-FIX-v2');
-        console.log('✓ Función borrarCitaNuevo disponible:', typeof window.borrarCitaNuevo);
 
         document.addEventListener('DOMContentLoaded', function() {
             const calendarEl = document.getElementById('calendar');
-            
-            // Definimos el locale fuera para evitar caché de configuraciones
-            const localeEs = {
-                code: 'es-custom', // Nombre único para forzar limpieza
-                week: { dow: 1, doy: 4 },
-                buttonText: {
-                    prev: '<',
-                    next: '>',
-                    today: 'Hoy',
-                    month: 'Mes',
-                    week: 'Semana',
-                    day: 'Día',
-                    list: 'Lista'
-                },
-                weekText: 'Sm',
-                allDayText: 'Todo el día',
-                moreLinkText: 'más',
-                noEventsText: 'No hay eventos'
-            };
-
             calendar = new FullCalendar.Calendar(calendarEl, {
-                locale: localeEs,
-                initialView: 'dayGridMonth', 
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,dayGridWeek,timeGridDay'
-                },
-
-                // USAR CONFIGURACIÓN DE LA BASE DE DATOS
-                slotMinTime: '{{ config.hora_apertura }}:00',
-                slotMaxTime: '{{ config.hora_cierre }}:00',
-                allDaySlot: false,
-                slotDuration: '00:15:00',
-                
-                // 1. FORZAR RENDERIZADO DE HORAS (Elimina "7:007:00")
-                slotLabelContent: function(arg) {
-                    return { html: `<span class="text-xs font-mono text-slate-500">${arg.text}</span>` };
-                },
-                slotLabelFormat: {
-                    hour: '2-digit', minute: '2-digit', omitZeroMinute: false, meridiem: false, hour12: false
-                },
-
-                // 2. FORZAR RENDERIZADO DE DÍAS (Elimina "miémiércoles")
+                locale: 'es', initialView: 'dayGridMonth', 
+                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,dayGridWeek,timeGridDay' },
+                slotMinTime: '07:00:00', slotMaxTime: '20:00:00', allDaySlot: false, slotDuration: '00:15:00',
+                slotLabelContent: function(arg) { return { html: `<span class="text-xs font-mono text-slate-500">${arg.text}</span>` }; },
+                slotLabelFormat: { hour: '2-digit', minute: '2-digit', omitZeroMinute: false, meridiem: false, hour12: false },
                 dayHeaderContent: function(arg) {
-                    // Formateamos la fecha nosotros mismos usando JS nativo
-                    let texto = arg.date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'numeric' });
-                    // Quitamos puntos si existen (mié. -> mié)
-                    texto = texto.replace('.', ''); 
-                    return { html: `<span class="capitalize text-slate-700 font-semibold">${texto}</span>` };
+                    let t = arg.date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'numeric' });
+                    return { html: `<span class="capitalize text-slate-700 font-semibold">${t.replace('.', '')}</span>` };
                 },
-
-                // --- SOLUCIÓN TÍTULO DUPLICADO ---
-                // Esta función se ejecuta cada vez que el calendario cambia de fecha/vista.
-                // Buscamos el título y reemplazamos su texto manualmente.
-                datesSet: function(info) {
-                    const titleEl = document.querySelector('.fc-toolbar-title');
-                    if (titleEl) {
-                        const fecha = calendar.getDate();
-                        // Generamos: "Diciembre de 2025"
-                        let mes = fecha.toLocaleString('es-ES', { month: 'long' });
-                        mes = mes.charAt(0).toUpperCase() + mes.slice(1); // Capitalizar
-                        const anio = fecha.getFullYear();
-                        
-                        // LIMPIEZA NUCLEAR: .innerText borra todo lo que había antes (incluidos duplicados)
-                        titleEl.innerText = `${mes} de ${anio}`;
+                datesSet: function() {
+                    const tEl = document.querySelector('.fc-toolbar-title');
+                    if(tEl) {
+                        const f = calendar.getDate();
+                        const m = f.toLocaleString('es-ES', { month: 'long' });
+                        tEl.innerText = `${m.charAt(0).toUpperCase() + m.slice(1)} de ${f.getFullYear()}`;
                     }
                 },
-
-                selectable: true,
-                navLinks: false,
-                
+                selectable: true, navLinks: false,
                 dateClick: function(info) {
-                    if (info.view.type !== 'timeGridDay') {
-                        calendar.changeView('timeGridDay', info.dateStr);
-                        fechaActualDia = info.date;
-                    } else {
-                        if(!validarDoctor()) return;
-                        abrirModal(info.date);
-                    }
+                    if (info.view.type !== 'timeGridDay') { calendar.changeView('timeGridDay', info.dateStr); fechaActualDia = info.date; }
+                    else { if(!doctorSelect.value) return Swal.fire('Error', 'Seleccione Doctor', 'warning'); abrirModalNuevo(info.date); }
                 },
-
                 select: function(info) {
                     if(info.view.type === 'timeGridDay') {
-                         if(!validarDoctor()) return;
-                         abrirModal(info.start);
+                         if(!doctorSelect.value) return Swal.fire('Error', 'Seleccione Doctor', 'warning');
+                         abrirModalNuevo(info.start);
                     }
                 },
-
-                // EVENT CLICK: Al hacer clic en una cita existente (Rojo)
                 eventClick: function(info) {
-                    const evento = info.event;
-                    const props = evento.extendedProps;
-
-                    console.log('📋 [EVENTCLICK] Evento completo:', evento);
-                    console.log('📋 [EVENTCLICK] extendedProps:', JSON.stringify(props, null, 2));
-                    console.log('📋 [EVENTCLICK] evento.id:', evento.id);
-                    console.log('📋 [EVENTCLICK] props.cita_id:', props.cita_id);
-
-                    resetearFormulario('ver'); // <--- Preparamos modo lectura
-
-                    // Cargar ID de la cita - PRIORIDAD: evento.id si cita_id no existe
-                    const citaId = props.cita_id || evento.id;
-                    console.log('📋 [EVENTCLICK] ID final a usar:', citaId);
-                    document.getElementById('citaId').value = citaId;
-                    
-                    // Cargar datos del paciente
-                    document.getElementById('ci').value = props.ci || '';
-                    document.getElementById('nombre').value = props.nombre || '';
-                    document.getElementById('telefono').value = props.telefono || '';
-                    document.getElementById('motivo').value = props.motivo || '';
-                    
-                    // Cargar historial médico
-                    document.getElementById('alergias').value = props.alergias || 'Ninguna conocida';
-                    document.getElementById('cirugias').value = props.cirugias || 'Ninguna';
+                    const props = info.event.extendedProps;
+                    resetearFormulario('ver');
+                    document.getElementById('citaId').value = props.cita_id;
+                    document.getElementById('ci').value = props.ci;
+                    document.getElementById('nombre').value = props.nombre;
+                    document.getElementById('telefono').value = props.telefono;
+                    document.getElementById('motivo').value = props.motivo;
+                    document.getElementById('alergias').value = props.alergias || '';
+                    document.getElementById('cirugias').value = props.cirugias || '';
                     document.getElementById('notas').value = props.notas || '';
                     
-                    // Mostrar badge de usuario registrado
-                    if(props.ci) {
-                        document.getElementById('msgUsuarioEncontrado').classList.remove('hidden');
-                    }
-
-                    // Cargar horas
-                    const start = evento.start;
-                    const end = evento.end || start;
-                    
+                    const start = info.event.start;
+                    const end = info.event.end || start;
                     document.getElementById('horaInicioInput').value = start.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit', hour12:false});
                     document.getElementById('horaFinInput').value = end.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit', hour12:false});
-
-                    // Actualizar fecha
+                    
                     fechaActualDia = start;
-                    const opciones = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-                    document.getElementById('modalFechaTitulo').textContent = start.toLocaleDateString('es-ES', opciones);
-
                     modal.classList.remove('hidden');
                 }
             });
             calendar.render();
         });
 
-        function validarDoctor() {
-            if(!doctorSelect.value) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Falta Especialista',
-                    text: 'Por favor seleccione un doctor primero.',
-                    confirmButtonColor: '#10b981'
-                });
-                return false;
-            }
-            return true;
-        }
-
-        function abrirModal(fechaDate) {
-            resetearFormulario('nuevo'); // <--- Preparamos modo nuevo
-            
+        function abrirModalNuevo(fechaDate) {
+            resetearFormulario('nuevo');
             fechaActualDia = fechaDate;
-            
-            const horas = String(fechaDate.getHours()).padStart(2, '0');
-            const minutos = String(fechaDate.getMinutes()).padStart(2, '0');
-            
-            horaInicioInput.value = `${horas}:${minutos}`;
+            const h = String(fechaDate.getHours()).padStart(2, '0');
+            const m = String(fechaDate.getMinutes()).padStart(2, '0');
+            horaInicioInput.value = `${h}:${m}`;
             actualizarHoraFin();
-            
-            const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-            modalFechaTitulo.textContent = fechaDate.toLocaleDateString('es-ES', opcionesFecha);
-
+            const op = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            document.getElementById('modalFechaTitulo').innerText = fechaDate.toLocaleDateString('es-ES', op);
             modal.classList.remove('hidden');
-        }
-
-        window.usarReservaRapida = function() {
-            if(!validarDoctor()) return;
-            
-            const horaStr = inputHoraRapida.value;
-            if(!horaStr) {
-                Swal.fire('Atención', 'Ingrese una hora válida', 'warning');
-                return;
-            }
-
-            const fechaBase = calendar.getDate(); 
-            const [h, m] = horaStr.split(':');
-            fechaBase.setHours(h);
-            fechaBase.setMinutes(m);
-
-            abrirModal(fechaBase);
         }
 
         doctorSelect.addEventListener('change', async (e) => {
             const docId = e.target.value;
             duracionDoctor = parseInt(e.target.options[e.target.selectedIndex].getAttribute('data-duracion'));
-            
-            panelRapido.classList.remove('hidden');
-
             calendar.getEventSources().forEach(src => src.remove());
-            try {
-                const response = await fetch(`/api/citas/${docId}`);
-                const eventos = await response.json();
-                
-                console.log('📦 [CARGA] Eventos recibidos del backend:', eventos.length);
-                console.log('📦 [CARGA] Primer evento:', JSON.stringify(eventos[0], null, 2));
-                
-                // PASAR DIRECTAMENTE LOS EVENTOS SIN MAPEAR
-                // El backend ya envía el formato correcto con id, title, start, end, color, extendedProps
-                calendar.addEventSource(eventos);
-            } catch (err) { 
-                console.error("❌ Error cargando citas", err); 
-            }
+            const res = await fetch(`/api/citas/${docId}`);
+            const ev = await res.json();
+            calendar.addEventSource(ev);
         });
 
         horaInicioInput.addEventListener('change', actualizarHoraFin);
-        
         function actualizarHoraFin() {
             if(!horaInicioInput.value) return;
             const [h, m] = horaInicioInput.value.split(':').map(Number);
-            const fin = new Date();
-            fin.setHours(h);
-            fin.setMinutes(m + duracionDoctor);
+            const fin = new Date(); fin.setHours(h); fin.setMinutes(m + duracionDoctor);
             horaFinInput.value = `${String(fin.getHours()).padStart(2,'0')}:${String(fin.getMinutes()).padStart(2,'0')}`;
         }
 
         document.getElementById('formCita').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            // --- VALIDACIONES BOLIVIA ---
-            const ci = document.getElementById('ci').value;
-            const telefono = document.getElementById('telefono').value;
+            // Validaciones Regex (igual que antes)
+            if (!/^\d{5,12}$/.test(document.getElementById('ci').value)) return Swal.fire('Error CI', 'CI inválido', 'warning');
+            if (!/^[67]\d{7}$/.test(document.getElementById('telefono').value)) return Swal.fire('Error Celular', 'Celular inválido', 'warning');
 
-            // Regex Celular: Empieza con 6 o 7, seguido de 7 dígitos (Total 8)
-            const regexCelular = /^[67]\d{7}$/;
-            // Regex CI: Solo números, min 5 max 10
-            const regexCI = /^\d{5,10}$/;
-
-            if (!regexCI.test(ci)) {
-                Swal.fire('Error en CI', 'El CI debe ser un número válido boliviano (5-10 dígitos).', 'warning');
-                return;
-            }
-
-            if (!regexCelular.test(telefono)) {
-                Swal.fire('Error en Celular', 'El número debe ser boliviano: 8 dígitos y empezar con 6 o 7.', 'warning');
-                return;
-            }
-            // -----------------------------
-            
-            const fechaStr = fechaActualDia.toISOString().split('T')[0];
-            
-            // Construimos ambas fechas completas
-            const fechaInicioISO = `${fechaStr}T${horaInicioInput.value}:00`;
-            const fechaFinISO = `${fechaStr}T${horaFinInput.value}:00`;
-
-            // Validar que la hora fin sea mayor a la inicio
-            if (horaFinInput.value <= horaInicioInput.value) {
-                Swal.fire('Error', 'La hora de fin debe ser mayor a la de inicio', 'warning');
-                return;
-            }
-
-            const formData = new FormData();
-            const citaId = document.getElementById('citaId').value;
-            if (citaId) {
-                formData.append('cita_id', citaId);
-            }
-            formData.append('doctor_id', doctorSelect.value);
-            formData.append('fecha_inicio_str', fechaInicioISO);
-            formData.append('fecha_fin_str', fechaFinISO);
-            formData.append('paciente_ci', ci);
-            formData.append('paciente_nombre', document.getElementById('nombre').value);
-            formData.append('paciente_telefono', telefono);
-            // Agregar datos del historial médico
-            formData.append('paciente_alergias', document.getElementById('alergias').value || 'Ninguna conocida');
-            formData.append('paciente_cirugias', document.getElementById('cirugias').value || 'Ninguna');
-            formData.append('paciente_notas', document.getElementById('notas').value || '');
-            formData.append('motivo', document.getElementById('motivo').value);
+            const fIso = `${fechaActualDia.toISOString().split('T')[0]}`;
+            const fd = new FormData();
+            fd.append('cita_id', document.getElementById('citaId').value);
+            fd.append('doctor_id', doctorSelect.value);
+            fd.append('fecha_inicio_str', `${fIso}T${horaInicioInput.value}:00`);
+            fd.append('fecha_fin_str', `${fIso}T${horaFinInput.value}:00`);
+            fd.append('paciente_ci', document.getElementById('ci').value);
+            fd.append('paciente_nombre', document.getElementById('nombre').value);
+            fd.append('paciente_telefono', document.getElementById('telefono').value);
+            fd.append('motivo', document.getElementById('motivo').value);
+            // Historial
+            fd.append('paciente_alergias', document.getElementById('alergias').value);
+            fd.append('paciente_cirugias', document.getElementById('cirugias').value);
+            fd.append('paciente_notas', document.getElementById('notas').value);
 
             try {
-                const res = await fetch('/agendar', { method: 'POST', body: formData });
+                const res = await fetch('/agendar', { method: 'POST', body: fd });
                 const data = await res.json();
                 if(res.ok) {
                     cerrarModal();
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Agendado',
-                        text: `Cita: ${horaInicioInput.value} - ${horaFinInput.value}`,
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
+                    Swal.fire({ icon: 'success', title: 'Guardado', showConfirmButton: false, timer: 1500 });
                     doctorSelect.dispatchEvent(new Event('change'));
-                } else {
-                    Swal.fire('Error', data.msg, 'error');
-                }
-            } catch (error) {
-                Swal.fire('Error', 'Fallo de conexión', 'error');
-            }
+                } else { Swal.fire('Error', data.msg, 'error'); }
+            } catch(e) { Swal.fire('Error', 'Fallo conexión', 'error'); }
         });
 
-        // --- GESTIÓN DE ESTADOS DEL MODAL ---
-        function resetearFormulario(modo) {
-            const form = document.getElementById('formCita');
-            const inputs = form.querySelectorAll('input:not([type=hidden]), textarea');
-            const btnGuardar = document.getElementById('btnGuardar');
-            const btnEditar = document.getElementById('btnEditar');
-            const btnEliminar = document.getElementById('btnEliminar');
-            
-            // Ocultar badge de usuario encontrado y cerrar historial
-            document.getElementById('msgUsuarioEncontrado').classList.add('hidden');
-            document.getElementById('panelHistorial').classList.add('hidden');
-            document.getElementById('iconHistorial').textContent = '▼';
-
-            if (modo === 'nuevo') {
-                document.getElementById('citaId').value = '';
-                form.reset();
-                // Limpiar campos de historial
-                document.getElementById('alergias').value = 'Ninguna conocida';
-                document.getElementById('cirugias').value = 'Ninguna';
-                document.getElementById('notas').value = '';
-                
-                document.querySelector('#modal h2').innerText = "Nueva Cita";
-                
-                // Habilitar todo
-                inputs.forEach(i => i.disabled = false);
-                
-                // Mostrar Guardar, Ocultar acciones
-                btnGuardar.classList.remove('hidden');
-                btnGuardar.innerText = "Confirmar";
-                btnEditar.classList.add('hidden');
-                btnEliminar.classList.add('hidden');
-                
-            } else if (modo === 'ver') {
-                document.querySelector('#modal h2').innerText = "Detalle de Cita";
-                
-                // Deshabilitar todo (Modo Lectura)
-                inputs.forEach(i => i.disabled = true);
-                
-                // Mostrar historial si estamos viendo una cita existente
-                document.getElementById('panelHistorial').classList.remove('hidden');
-                document.getElementById('iconHistorial').textContent = '▲';
-                
-                // Ocultar Guardar, Mostrar Editar/Borrar
-                btnGuardar.classList.add('hidden');
-                btnEditar.classList.remove('hidden');
-                btnEliminar.classList.remove('hidden');
-            }
+        window.cerrarModal = function() {
+            modal.classList.add('hidden');
+            document.getElementById('formCita').reset();
         }
-
-        // Función para activar edición
-        window.activarEdicion = function() {
-            const inputs = document.querySelectorAll('#formCita input:not([type=hidden]), #formCita textarea');
-            inputs.forEach(i => i.disabled = false);
-            
-            document.getElementById('btnEditar').classList.add('hidden');
-            document.getElementById('btnEliminar').classList.add('hidden');
-            document.getElementById('btnGuardar').classList.remove('hidden');
-            document.getElementById('btnGuardar').innerText = "Guardar Cambios";
-        }
-
-        // (Las funciones globales ya están definidas al inicio del script)
-
     </script>
 </body>
 </html>
-<!-- Version: 2025-12-03-FIX-BORRADO-v2 -->
