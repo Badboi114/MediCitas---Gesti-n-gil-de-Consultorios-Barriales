@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -15,13 +15,18 @@ class Doctor(Base):
     citas = relationship("Cita", back_populates="doctor")
 
 class Paciente(Base):
-    """Tabla de Pacientes - Sin campos ocultos"""
+    """Tabla de Pacientes con Historial Clínico"""
     __tablename__ = "pacientes"
     
     id = Column(Integer, primary_key=True, index=True)
     ci = Column(String, unique=True, index=True)
     nombre = Column(String)
     telefono = Column(String)
+    
+    # --- CAMPOS DE HISTORIAL MÉDICO ---
+    alergias = Column(Text, default="Ninguna conocida")
+    cirugias = Column(Text, default="Ninguna")
+    notas_medicas = Column(Text, default="")
 
     # Relación con citas
     citas = relationship("Cita", back_populates="paciente")

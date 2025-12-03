@@ -74,13 +74,17 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(config)
     
+    # Obtener lista de pacientes para el admin
+    pacientes = db.query(models.Paciente).all()
+    
     # Resumen rápido
     total_citas = len(citas)
     total_doctores = db.query(models.Doctor).count()
     
     return templates.TemplateResponse("admin.html", {
         "request": request, 
-        "citas": citas, 
+        "citas": citas,
+        "pacientes": pacientes,
         "config": config,
         "stats": {"total": total_citas, "docs": total_doctores}
     })
@@ -136,7 +140,11 @@ async def obtener_citas(doctor_id: int, db: Session = Depends(get_db)):
                         "ci": ci_paciente,
                         "nombre": nombre_paciente,
                         "telefono": str(cita.paciente.telefono) if cita.paciente and cita.paciente.telefono else "",
-                        "motivo": str(cita.motivo) if cita.motivo else ""
+                        "motivo": str(cita.motivo) if cita.motivo else "",
+                        # Datos del historial médico
+                        "alergias": str(cita.paciente.alergias) if cita.paciente and cita.paciente.alergias else "Ninguna conocida",
+                        "cirugias": str(cita.paciente.cirugias) if cita.paciente and cita.paciente.cirugias else "Ninguna",
+                        "notas": str(cita.paciente.notas_medicas) if cita.paciente and cita.paciente.notas_medicas else ""
                     }
                 })
             except Exception as e:
@@ -148,6 +156,22 @@ async def obtener_citas(doctor_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         print(f"✗ Error en obtener_citas: {e}")
         return []
+
+# API: Buscar Paciente por CI Exacto (Para autocompletado en formulario)
+@app.get("/api/paciente/{ci}")
+async def get_paciente(ci: str, db: Session = Depends(get_db)):
+    """Buscar paciente por CI para autocompletar datos y cargar historial"""
+    paciente = db.query(models.Paciente).filter(models.Paciente.ci == ci).first()
+    if paciente:
+        return JSONResponse({
+            "encontrado": True,
+            "nombre": paciente.nombre,
+            "telefono": paciente.telefono,
+            "alergias": paciente.alergias or "Ninguna conocida",
+            "cirugias": paciente.cirugias or "Ninguna",
+            "notas": paciente.notas_medicas or ""
+        })
+    return JSONResponse({"encontrado": False})
 
 @app.get("/api/buscar-paciente")
 async def buscar_paciente(q: str, db: Session = Depends(get_db)):
@@ -175,10 +199,14 @@ async def agendar_cita(
     paciente_ci: str = Form(...),
     paciente_nombre: str = Form(...),
     paciente_telefono: str = Form(...),
+    # Campos de historial médico
+    paciente_alergias: str = Form(default="Ninguna conocida"),
+    paciente_cirugias: str = Form(default="Ninguna"),
+    paciente_notas: str = Form(default=""),
     motivo: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    """Agendar cita con hora de fin manual (soporta creación y edición)"""
+    """Agendar cita con hora de fin manual (soporta creación y edición) + Historial Médico"""
     
     # 1. VALIDACIONES BOLIVIANAS (Seguridad Backend)
     
@@ -216,18 +244,28 @@ async def agendar_cita(
     if query_choque.first():
         return JSONResponse(content={"status": "error", "msg": "⛔ HORARIO OCUPADO"}, status_code=400)
 
-    # 4. Gestionar Paciente (Buscar o Crear)
+    # 4. Gestionar Paciente (Buscar o Crear) + Guardar Historial Médico
     paciente = db.query(models.Paciente).filter(models.Paciente.ci == paciente_ci).first()
     if not paciente:
-        # No existe: Crear nuevo paciente
-        paciente = models.Paciente(ci=paciente_ci, nombre=paciente_nombre, telefono=paciente_telefono)
+        # No existe: Crear nuevo paciente con historial
+        paciente = models.Paciente(
+            ci=paciente_ci, 
+            nombre=paciente_nombre, 
+            telefono=paciente_telefono,
+            alergias=paciente_alergias,
+            cirugias=paciente_cirugias,
+            notas_medicas=paciente_notas
+        )
         db.add(paciente)
         db.commit()
         db.refresh(paciente)
     else:
-        # Ya existe: Actualizar datos por si los corrigieron
+        # Ya existe: Actualizar todos los datos incluyendo historial
         paciente.nombre = paciente_nombre
         paciente.telefono = paciente_telefono
+        paciente.alergias = paciente_alergias
+        paciente.cirugias = paciente_cirugias
+        paciente.notas_medicas = paciente_notas
         db.commit()
 
     if cita_id:

@@ -120,6 +120,43 @@
                 </div>
 
             </div>
+
+            <!-- Nueva Sección: Directorio de Pacientes -->
+            <div class="bg-white p-6 rounded-lg shadow-sm col-span-3 mt-6">
+                <h3 class="font-bold text-slate-800 mb-4 border-b pb-2 flex items-center gap-2">
+                    👥 Directorio de Pacientes e Historiales Clínicos
+                </h3>
+                <div class="overflow-x-auto max-h-96">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3">CI</th>
+                                <th class="px-4 py-3">Nombre</th>
+                                <th class="px-4 py-3">Teléfono</th>
+                                <th class="px-4 py-3">Alergias</th>
+                                <th class="px-4 py-3">Cirugías</th>
+                                <th class="px-4 py-3">Notas Médicas</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for p in pacientes %}
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-4 py-3 font-mono text-xs font-bold">{{ p.ci }}</td>
+                                <td class="px-4 py-3 font-medium">{{ p.nombre }}</td>
+                                <td class="px-4 py-3 text-xs text-slate-500">+591 {{ p.telefono }}</td>
+                                <td class="px-4 py-3 text-red-600 text-xs font-semibold">{{ p.alergias }}</td>
+                                <td class="px-4 py-3 text-xs text-slate-600">{{ p.cirugias }}</td>
+                                <td class="px-4 py-3 text-xs italic text-slate-500 max-w-xs truncate">{{ p.notas_medicas }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-3 text-center">
+                    * Estos datos se actualizan automáticamente cuando se registra o edita una cita en el sistema.
+                </p>
+            </div>
+
         </div>
     </main>
 </body>
