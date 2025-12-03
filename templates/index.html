@@ -149,7 +149,7 @@
                         <span class="text-slate-300">➜</span>
                         <div class="w-1/2">
                             <label class="text-[10px] text-slate-400 mb-1 block uppercase font-bold">Fin</label>
-                            <input type="time" id="horaFinInput" class="w-full p-2 border border-slate-200 rounded bg-slate-100 text-slate-500 font-mono" readonly>
+                            <input type="time" id="horaFinInput" step="60" class="w-full p-2 border border-emerald-300 rounded bg-white text-emerald-700 font-mono font-bold focus:ring-2 focus:ring-emerald-500 outline-none">
                         </div>
                     </div>
                 </div>
@@ -364,11 +364,21 @@
             e.preventDefault();
             
             const fechaStr = fechaActualDia.toISOString().split('T')[0];
-            const fechaISO = `${fechaStr}T${horaInicioInput.value}:00`;
+            
+            // Construimos ambas fechas completas
+            const fechaInicioISO = `${fechaStr}T${horaInicioInput.value}:00`;
+            const fechaFinISO = `${fechaStr}T${horaFinInput.value}:00`;
+
+            // Validar que la hora fin sea mayor a la inicio
+            if (horaFinInput.value <= horaInicioInput.value) {
+                Swal.fire('Error', 'La hora de fin debe ser mayor a la de inicio', 'warning');
+                return;
+            }
 
             const formData = new FormData();
             formData.append('doctor_id', doctorSelect.value);
-            formData.append('fecha_inicio_str', fechaISO);
+            formData.append('fecha_inicio_str', fechaInicioISO);
+            formData.append('fecha_fin_str', fechaFinISO); // <--- NUEVO CAMPO ENVIADO
             formData.append('paciente_ci', document.getElementById('ci').value);
             formData.append('paciente_nombre', document.getElementById('nombre').value);
             formData.append('motivo', document.getElementById('motivo').value);
@@ -381,7 +391,7 @@
                     Swal.fire({
                         icon: 'success',
                         title: 'Agendado',
-                        text: `Cita confirmada para las ${horaInicioInput.value}`,
+                        text: `Cita: ${horaInicioInput.value} - ${horaFinInput.value}`,
                         timer: 1500,
                         showConfirmButton: false
                     });

@@ -86,40 +86,31 @@ async def buscar_paciente(q: str, db: Session = Depends(get_db)):
 async def agendar_cita(
     doctor_id: int = Form(...),
     fecha_inicio_str: str = Form(...),
+    fecha_fin_str: str = Form(...),  # <--- Aceptamos el nuevo dato
     paciente_ci: str = Form(...),
     paciente_nombre: str = Form(...),
     paciente_telefono: str = Form(default=""),
     motivo: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    """Lógica Maestra: Agendar con validación de choques"""
+    """Agendar cita con hora de fin manual"""
     
-    # 1. Convertir fecha (viene del calendario JS en formato ISO)
+    # 1. Convertir fechas
     try:
         fecha_inicio = datetime.fromisoformat(fecha_inicio_str.replace('Z', '+00:00'))
+        fecha_fin = datetime.fromisoformat(fecha_fin_str.replace('Z', '+00:00'))
     except ValueError:
         return JSONResponse(
             content={"status": "error", "msg": "Formato de fecha inválido"}, 
             status_code=400
         )
 
-    # 2. Buscar el doctor y calcular fin de cita según su duración
-    doctor = db.query(models.Doctor).filter(models.Doctor.id == doctor_id).first()
-    if not doctor:
-        return JSONResponse(
-            content={"status": "error", "msg": "Doctor no encontrado"}, 
-            status_code=404
-        )
-    
-    fecha_fin = fecha_inicio + timedelta(minutes=doctor.duracion_cita)
-
-    # 3. VALIDACIÓN CRÍTICA: ¿Hay choque de horario? (Matemática pura - TÚ controlas la lógica)
-    # Buscamos citas del mismo doctor que se solapen con el nuevo horario
+    # 2. VALIDACIÓN: ¿Hay choque de horario?
     choque = db.query(models.Cita).filter(
         models.Cita.doctor_id == doctor_id,
         models.Cita.activo == True,
-        models.Cita.fecha_inicio < fecha_fin,
-        models.Cita.fecha_fin > fecha_inicio
+        models.Cita.fecha_inicio < fecha_fin,  # Si la nueva cita empieza antes de que termine otra
+        models.Cita.fecha_fin > fecha_inicio   # Y termina después de que empiece otra
     ).first()
 
     if choque:
@@ -131,7 +122,7 @@ async def agendar_cita(
             status_code=400
         )
 
-    # 4. Buscar o Crear Paciente (Registro Express)
+    # 3. Buscar o Crear Paciente (Registro Express)
     paciente = db.query(models.Paciente).filter(models.Paciente.ci == paciente_ci).first()
     if not paciente:
         paciente = models.Paciente(
@@ -143,7 +134,7 @@ async def agendar_cita(
         db.commit()
         db.refresh(paciente)
 
-    # 5. Guardar la Cita
+    # 4. Guardar la Cita con las fechas MANUALES
     nueva_cita = models.Cita(
         doctor_id=doctor_id,
         paciente_id=paciente.id,
