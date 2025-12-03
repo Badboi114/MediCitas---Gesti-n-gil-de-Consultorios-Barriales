@@ -55,3 +55,11 @@ class Configuracion(Base):
     nombre_consultorio = Column(String, default="MediCitas")
     hora_apertura = Column(String, default="08:00")  # Formato "HH:MM"
     hora_cierre = Column(String, default="20:00")    # Formato "HH:MM"
+
+class Admin(Base):
+    """Tabla de Administrador - Sistema de Login"""
+    __tablename__ = "admin"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, default="admin")
+    password = Column(String, default="admin")  # En producción usar hash (bcrypt)

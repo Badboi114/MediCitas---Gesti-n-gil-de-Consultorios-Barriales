@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import Optional
@@ -13,6 +14,10 @@ import database, models
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Sistema Integral MediCitas")
+
+# MIDDLEWARE DE SESIONES PARA LOGIN
+app.add_middleware(SessionMiddleware, secret_key="medicitas_secret_key_2025_seguro")
+
 templates = Jinja2Templates(directory="templates")
 
 # Dependencia para obtener la sesión de BD en cada petición
@@ -23,13 +28,65 @@ def get_db():
     finally:
         db.close()
 
+# --- FUNCIONES DE AUTENTICACIÓN ---
+def verificar_sesion(request: Request):
+    """Verifica si el usuario está logueado"""
+    return request.session.get("user") is not None
+
+# --- EVENTO DE INICIO: CREAR ADMIN POR DEFECTO ---
+@app.on_event("startup")
+def startup_event():
+    """Crea el usuario admin/admin si no existe"""
+    db = database.SessionLocal()
+    try:
+        admin = db.query(models.Admin).first()
+        if not admin:
+            db.add(models.Admin(username="admin", password="admin"))
+            db.commit()
+            print("✓ Usuario admin creado: admin/admin")
+    finally:
+        db.close()
+
 # --- 1. LANDING PAGE (La Entrada) ---
 @app.get("/", response_class=HTMLResponse)
 async def landing(request: Request):
     """Página de entrada con dos opciones: AdminMediCitas y MediCitas"""
     return templates.TemplateResponse("landing.html", {"request": request})
 
-# --- 2. MEDICITAS (Lado Público/Recepción) ---
+# --- 2. SISTEMA DE LOGIN ---
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    """Página de login para administradores"""
+    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+
+@app.post("/login")
+async def login_process(
+    request: Request, 
+    username: str = Form(...), 
+    password: str = Form(...), 
+    db: Session = Depends(get_db)
+):
+    """Procesar login del administrador"""
+    admin = db.query(models.Admin).filter(models.Admin.username == username).first()
+    
+    if admin and admin.password == password:
+        # Guardar sesión
+        request.session["user"] = admin.username
+        return RedirectResponse(url="/admin", status_code=303)
+    
+    # Login fallido
+    return templates.TemplateResponse("login.html", {
+        "request": request, 
+        "error": "Usuario o contraseña incorrectos"
+    })
+
+@app.get("/logout")
+async def logout(request: Request):
+    """Cerrar sesión del administrador"""
+    request.session.clear()
+    return RedirectResponse(url="/login", status_code=303)
+
+# --- 3. MEDICITAS (Lado Público/Recepción) ---
 @app.get("/medicitas", response_class=HTMLResponse)
 async def public_calendar(request: Request, db: Session = Depends(get_db)):
     """Calendario interactivo para recepción de pacientes"""
@@ -61,10 +118,14 @@ async def public_calendar(request: Request, db: Session = Depends(get_db)):
         "config": config  # Pasamos la configuración al calendario
     })
 
-# --- 3. ADMIN MEDICITAS (Back Office) ---
+# --- 4. ADMIN MEDICITAS (Back Office) - PROTEGIDO ---
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     """Panel de Control Administrativo con Vista Tabular"""
+    # PROTECCIÓN: Verificar login
+    if not verificar_sesion(request):
+        return RedirectResponse(url="/login", status_code=303)
+    
     # Vista Tabular de Auditoría
     citas = db.query(models.Cita).order_by(models.Cita.fecha_inicio.desc()).all()
     config = db.query(models.Configuracion).first()
@@ -77,17 +138,49 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     # Obtener lista de pacientes para el admin
     pacientes = db.query(models.Paciente).all()
     
+    # Obtener lista de doctores
+    doctores = db.query(models.Doctor).all()
+    
+    # Obtener datos del admin actual
+    admin_data = db.query(models.Admin).first()
+    
     # Resumen rápido
     total_citas = len(citas)
     total_doctores = db.query(models.Doctor).count()
+    total_pacientes = len(pacientes)
     
     return templates.TemplateResponse("admin.html", {
         "request": request, 
         "citas": citas,
         "pacientes": pacientes,
+        "doctores": doctores,
         "config": config,
-        "stats": {"total": total_citas, "docs": total_doctores}
+        "admin": admin_data,
+        "stats": {"total": total_citas, "docs": total_doctores, "pacs": total_pacientes}
     })
+
+# --- APIS ADMIN: Perfil y Configuración ---
+
+@app.post("/admin/perfil")
+async def update_admin_profile(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Actualizar credenciales del administrador"""
+    if not verificar_sesion(request):
+        return RedirectResponse(url="/login", status_code=303)
+    
+    admin = db.query(models.Admin).first()
+    if admin:
+        admin.username = username
+        admin.password = password
+        db.commit()
+        # Actualizar sesión con nuevo username
+        request.session["user"] = username
+    
+    return RedirectResponse(url="/admin", status_code=303)
 
 # API: Actualizar Configuración
 @app.post("/admin/config")
@@ -106,6 +199,110 @@ async def update_config(
     config.hora_cierre = hora_cierre
     db.commit()
     return RedirectResponse(url="/admin", status_code=303)
+
+# --- APIS GESTIÓN DE DOCTORES (ELEMENTOS) ---
+
+@app.post("/admin/doctor/guardar")
+async def guardar_doctor(
+    doc_id: Optional[int] = Form(None),
+    nombre: str = Form(...),
+    especialidad: str = Form(...),
+    duracion: int = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Crear o editar un doctor"""
+    if doc_id:
+        # Editar doctor existente
+        doc = db.query(models.Doctor).filter(models.Doctor.id == doc_id).first()
+        if doc:
+            doc.nombre = nombre
+            doc.especialidad = especialidad
+            doc.duracion_cita = duracion
+            db.commit()
+    else:
+        # Crear nuevo doctor
+        nuevo = models.Doctor(
+            nombre=nombre, 
+            especialidad=especialidad, 
+            duracion_cita=duracion
+        )
+        db.add(nuevo)
+        db.commit()
+    return RedirectResponse(url="/admin", status_code=303)
+
+@app.post("/admin/doctor/borrar")
+async def borrar_doctor(doc_id: int = Form(...), db: Session = Depends(get_db)):
+    """Eliminar un doctor"""
+    doc = db.query(models.Doctor).filter(models.Doctor.id == doc_id).first()
+    if doc:
+        # Verificar si tiene citas futuras
+        citas_futuras = db.query(models.Cita).filter(
+            models.Cita.doctor_id == doc_id,
+            models.Cita.fecha_inicio > datetime.now()
+        ).count()
+        
+        if citas_futuras > 0:
+            return JSONResponse({
+                "status": "error", 
+                "msg": f"No se puede eliminar. Tiene {citas_futuras} cita(s) pendiente(s)"
+            }, status_code=400)
+        
+        db.delete(doc)
+        db.commit()
+        return JSONResponse({"status": "ok"})
+    return JSONResponse({"status": "error", "msg": "Doctor no encontrado"}, status_code=404)
+
+# --- APIS GESTIÓN DE PACIENTES ---
+
+@app.post("/admin/paciente/guardar")
+async def guardar_paciente(
+    pac_id: int = Form(...),
+    ci: str = Form(...),
+    nombre: str = Form(...),
+    telefono: str = Form(...),
+    alergias: str = Form(default="Ninguna conocida"),
+    cirugias: str = Form(default="Ninguna"),
+    notas: str = Form(default=""),
+    db: Session = Depends(get_db)
+):
+    """Editar datos de un paciente existente"""
+    # Validar formato boliviano
+    if not re.match(r"^[67]\d{7}$", telefono):
+        return JSONResponse({
+            "status": "error", 
+            "msg": "El celular debe ser boliviano (8 dígitos, empieza con 6 o 7)"
+        }, status_code=400)
+    
+    if not re.match(r"^\d{5,10}$", ci):
+        return JSONResponse({
+            "status": "error", 
+            "msg": "El C.I. no es válido (solo números, 5-10 dígitos)"
+        }, status_code=400)
+    
+    pac = db.query(models.Paciente).filter(models.Paciente.id == pac_id).first()
+    if pac:
+        pac.ci = ci
+        pac.nombre = nombre
+        pac.telefono = telefono
+        pac.alergias = alergias if alergias else "Ninguna conocida"
+        pac.cirugias = cirugias if cirugias else "Ninguna"
+        pac.notas_medicas = notas
+        db.commit()
+        return RedirectResponse(url="/admin", status_code=303)
+    return JSONResponse({"status": "error", "msg": "Paciente no encontrado"}, status_code=404)
+
+@app.post("/admin/paciente/borrar")
+async def borrar_paciente(pac_id: int = Form(...), db: Session = Depends(get_db)):
+    """Eliminar un paciente y todas sus citas"""
+    pac = db.query(models.Paciente).filter(models.Paciente.id == pac_id).first()
+    if pac:
+        # Eliminar todas las citas asociadas primero
+        db.query(models.Cita).filter(models.Cita.paciente_id == pac_id).delete()
+        # Eliminar el paciente
+        db.delete(pac)
+        db.commit()
+        return JSONResponse({"status": "ok"})
+    return JSONResponse({"status": "error", "msg": "Paciente no encontrado"}, status_code=404)
 
 # --- APIS EXISTENTES (Sin cambios mayores) ---
 
