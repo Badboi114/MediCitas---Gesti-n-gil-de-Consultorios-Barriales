@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>MediCitas | Final</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
@@ -83,7 +86,6 @@
             <span class="bg-emerald-500 text-white rounded p-1 text-sm">MC</span> 
             Medi<span class="text-emerald-600">Citas</span>
         </div>
-        <div class="text-xs font-mono text-slate-400">v8.0 Render Manual</div>
     </nav>
 
     <div class="flex flex-col md:flex-row h-[calc(100vh-60px)]">
@@ -154,15 +156,30 @@
                     </div>
                 </div>
 
+                <input type="hidden" id="citaId">
+
                 <div class="space-y-3">
                     <input type="text" id="ci" class="w-full bg-slate-50 border-b-2 border-slate-200 p-2 focus:border-emerald-500 focus:bg-white outline-none" required placeholder="Cédula de Identidad">
                     <input type="text" id="nombre" class="w-full bg-slate-50 border-b-2 border-slate-200 p-2 focus:border-emerald-500 focus:bg-white outline-none" required placeholder="Nombre Completo">
                     <textarea id="motivo" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:border-emerald-500 outline-none resize-none h-20" placeholder="Motivo de la consulta..."></textarea>
                 </div>
 
-                <div class="flex gap-3 pt-2">
-                    <button type="button" onclick="cerrarModal()" class="flex-1 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-semibold">Cancelar</button>
-                    <button type="submit" class="flex-1 py-2 text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg text-sm font-bold shadow-lg shadow-emerald-500/30">Confirmar</button>
+                <div class="flex gap-3 pt-4 border-t border-slate-100 mt-4">
+                    <button type="button" onclick="cerrarModal()" class="flex-1 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-semibold transition-colors">
+                        Cerrar
+                    </button>
+
+                    <button type="submit" id="btnGuardar" class="flex-1 py-2 text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg text-sm font-bold shadow-lg shadow-emerald-500/30 transition-all">
+                        Confirmar
+                    </button>
+
+                    <button type="button" id="btnEditar" onclick="activarEdicion()" class="hidden flex-1 py-2 text-white bg-blue-500 hover:bg-blue-600 rounded-lg text-sm font-bold shadow-md">
+                        ✏️ Editar
+                    </button>
+                    
+                    <button type="button" id="btnEliminar" onclick="borrarCitaNuevo()" class="hidden flex-1 py-2 text-white bg-red-500 hover:bg-red-600 rounded-lg text-sm font-bold shadow-md">
+                        🗑️ Borrar
+                    </button>
                 </div>
             </form>
         </div>
@@ -181,6 +198,86 @@
 
         let duracionDoctor = 30;
         let fechaActualDia = new Date();
+
+        // ========================================
+        // FUNCIONES GLOBALES (definidas primero)
+        // ========================================
+        
+        // Función para borrar cita (NUEVA VERSION CON LOGS)
+        window.borrarCitaNuevo = async function() {
+            const idInput = document.getElementById('citaId').value;
+            
+            console.log('🔍 [BORRADO] ID del input:', idInput);
+            
+            if (!idInput) {
+                Swal.fire('Error', 'No se encontró el ID de la cita', 'error');
+                return;
+            }
+
+            const result = await Swal.fire({
+                title: '¿Estás seguro?',
+                text: "Esto borrará la cita permanentemente.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'Sí, borrar',
+                cancelButtonText: 'Cancelar'
+            });
+            
+            if (result.isConfirmed) {
+                const idNumerico = parseInt(idInput);
+                console.log('🔍 [BORRADO] ID convertido a número:', idNumerico);
+                
+                const formData = new FormData();
+                formData.append('cita_id', idNumerico);
+                
+                console.log('🔍 [BORRADO] FormData preparado');
+
+                try {
+                    console.log('📤 [BORRADO] Enviando POST a /borrar...');
+                    const response = await fetch('/borrar', { 
+                        method: 'POST', 
+                        body: formData 
+                    });
+                    
+                    console.log('📥 [BORRADO] Respuesta HTTP:', response.status);
+                    
+                    if (response.ok) {
+                        cerrarModal();
+                        doctorSelect.dispatchEvent(new Event('change'));
+                        Swal.fire('Eliminado', 'La cita ha sido borrada.', 'success');
+                    } else {
+                        const data = await response.json();
+                        console.log('❌ [BORRADO] Error del servidor:', data);
+                        Swal.fire('Error', data.msg || 'Error al borrar', 'error');
+                    }
+                } catch(e) { 
+                    console.error('❌ [BORRADO] Excepción:', e);
+                    Swal.fire('Error', 'Fallo de conexión con el servidor', 'error'); 
+                }
+            }
+        }
+
+        // Función para activar edición
+        window.activarEdicion = function() {
+            const inputs = document.querySelectorAll('#formCita input:not([type=hidden]), #formCita textarea');
+            inputs.forEach(i => i.disabled = false);
+            
+            document.getElementById('btnEditar').classList.add('hidden');
+            document.getElementById('btnEliminar').classList.add('hidden');
+            document.getElementById('btnGuardar').classList.remove('hidden');
+            document.getElementById('btnGuardar').innerText = "Guardar Cambios";
+        }
+
+        // Función para cerrar modal
+        window.cerrarModal = function() {
+            modal.classList.add('hidden');
+            resetearFormulario('nuevo');
+        }
+
+        // ==== VERIFICACIÓN DE VERSIÓN ====
+        console.log('🚀 MediCitas cargado - Versión: 2025-12-03-BORRADO-FIX-v2');
+        console.log('✓ Función borrarCitaNuevo disponible:', typeof window.borrarCitaNuevo);
 
         document.addEventListener('DOMContentLoaded', function() {
             const calendarEl = document.getElementById('calendar');
@@ -235,8 +332,22 @@
                     return { html: `<span class="capitalize text-slate-700 font-semibold">${texto}</span>` };
                 },
 
-                // 3. FORZAR FORMATO DE TÍTULO (Elimina duplicados en título)
-                titleFormat: { year: 'numeric', month: 'long', day: 'numeric' },
+                // --- SOLUCIÓN TÍTULO DUPLICADO ---
+                // Esta función se ejecuta cada vez que el calendario cambia de fecha/vista.
+                // Buscamos el título y reemplazamos su texto manualmente.
+                datesSet: function(info) {
+                    const titleEl = document.querySelector('.fc-toolbar-title');
+                    if (titleEl) {
+                        const fecha = calendar.getDate();
+                        // Generamos: "Diciembre de 2025"
+                        let mes = fecha.toLocaleString('es-ES', { month: 'long' });
+                        mes = mes.charAt(0).toUpperCase() + mes.slice(1); // Capitalizar
+                        const anio = fecha.getFullYear();
+                        
+                        // LIMPIEZA NUCLEAR: .innerText borra todo lo que había antes (incluidos duplicados)
+                        titleEl.innerText = `${mes} de ${anio}`;
+                    }
+                },
 
                 selectable: true,
                 navLinks: false,
@@ -258,20 +369,41 @@
                     }
                 },
 
+                // EVENT CLICK: Al hacer clic en una cita existente (Rojo)
                 eventClick: function(info) {
                     const evento = info.event;
-                    Swal.fire({
-                        title: evento.title,
-                        html: `
-                            <div class="text-left space-y-2">
-                                <p><strong>CI:</strong> ${evento.extendedProps.ci || 'N/A'}</p>
-                                <p><strong>Motivo:</strong> ${evento.extendedProps.motivo || 'N/A'}</p>
-                                <p><strong>Hora:</strong> ${evento.start.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</p>
-                            </div>
-                        `,
-                        icon: 'info',
-                        confirmButtonColor: '#10b981'
-                    });
+                    const props = evento.extendedProps;
+
+                    console.log('📋 [EVENTCLICK] Evento completo:', evento);
+                    console.log('📋 [EVENTCLICK] extendedProps:', JSON.stringify(props, null, 2));
+                    console.log('📋 [EVENTCLICK] evento.id:', evento.id);
+                    console.log('📋 [EVENTCLICK] props.cita_id:', props.cita_id);
+
+                    resetearFormulario('ver'); // <--- Preparamos modo lectura
+
+                    // Cargar ID de la cita - PRIORIDAD: evento.id si cita_id no existe
+                    const citaId = props.cita_id || evento.id;
+                    console.log('📋 [EVENTCLICK] ID final a usar:', citaId);
+                    document.getElementById('citaId').value = citaId;
+                    
+                    // Cargar datos del paciente
+                    document.getElementById('ci').value = props.ci || '';
+                    document.getElementById('nombre').value = props.nombre || '';
+                    document.getElementById('motivo').value = props.motivo || '';
+
+                    // Cargar horas
+                    const start = evento.start;
+                    const end = evento.end || start;
+                    
+                    document.getElementById('horaInicioInput').value = start.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit', hour12:false});
+                    document.getElementById('horaFinInput').value = end.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit', hour12:false});
+
+                    // Actualizar fecha
+                    fechaActualDia = start;
+                    const opciones = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+                    document.getElementById('modalFechaTitulo').textContent = start.toLocaleDateString('es-ES', opciones);
+
+                    modal.classList.remove('hidden');
                 }
             });
             calendar.render();
@@ -291,6 +423,8 @@
         }
 
         function abrirModal(fechaDate) {
+            resetearFormulario('nuevo'); // <--- Preparamos modo nuevo
+            
             fechaActualDia = fechaDate;
             
             const horas = String(fechaDate.getHours()).padStart(2, '0');
@@ -333,20 +467,15 @@
                 const response = await fetch(`/api/citas/${docId}`);
                 const eventos = await response.json();
                 
-                const eventosFC = eventos.map(ev => ({
-                    title: 'Ocupado',
-                    start: ev.start,
-                    end: ev.end,
-                    backgroundColor: '#ef4444',
-                    borderColor: '#ef4444',
-                    display: 'block',
-                    extendedProps: {
-                        ci: ev.ci,
-                        motivo: ev.motivo
-                    }
-                }));
-                calendar.addEventSource(eventosFC);
-            } catch (err) { console.error("Error cargando citas", err); }
+                console.log('📦 [CARGA] Eventos recibidos del backend:', eventos.length);
+                console.log('📦 [CARGA] Primer evento:', JSON.stringify(eventos[0], null, 2));
+                
+                // PASAR DIRECTAMENTE LOS EVENTOS SIN MAPEAR
+                // El backend ya envía el formato correcto con id, title, start, end, color, extendedProps
+                calendar.addEventSource(eventos);
+            } catch (err) { 
+                console.error("❌ Error cargando citas", err); 
+            }
         });
 
         horaInicioInput.addEventListener('change', actualizarHoraFin);
@@ -376,11 +505,16 @@
             }
 
             const formData = new FormData();
+            const citaId = document.getElementById('citaId').value;
+            if (citaId) {
+                formData.append('cita_id', citaId); // <--- AGREGAR ID para edición
+            }
             formData.append('doctor_id', doctorSelect.value);
             formData.append('fecha_inicio_str', fechaInicioISO);
-            formData.append('fecha_fin_str', fechaFinISO); // <--- NUEVO CAMPO ENVIADO
+            formData.append('fecha_fin_str', fechaFinISO);
             formData.append('paciente_ci', document.getElementById('ci').value);
             formData.append('paciente_nombre', document.getElementById('nombre').value);
+            formData.append('paciente_telefono', ''); // Por ahora vacío, se puede agregar campo después
             formData.append('motivo', document.getElementById('motivo').value);
 
             try {
@@ -404,10 +538,55 @@
             }
         });
 
-        window.cerrarModal = function() {
-            modal.classList.add('hidden');
-            document.getElementById('formCita').reset();
+        // --- GESTIÓN DE ESTADOS DEL MODAL ---
+        function resetearFormulario(modo) {
+            const form = document.getElementById('formCita');
+            const inputs = form.querySelectorAll('input:not([type=hidden]), textarea');
+            const btnGuardar = document.getElementById('btnGuardar');
+            const btnEditar = document.getElementById('btnEditar');
+            const btnEliminar = document.getElementById('btnEliminar');
+
+            if (modo === 'nuevo') {
+                document.getElementById('citaId').value = '';
+                form.reset();
+                document.querySelector('#modal h2').innerText = "Nueva Cita";
+                
+                // Habilitar todo
+                inputs.forEach(i => i.disabled = false);
+                
+                // Mostrar Guardar, Ocultar acciones
+                btnGuardar.classList.remove('hidden');
+                btnGuardar.innerText = "Confirmar";
+                btnEditar.classList.add('hidden');
+                btnEliminar.classList.add('hidden');
+                
+            } else if (modo === 'ver') {
+                document.querySelector('#modal h2').innerText = "Detalle de Cita";
+                
+                // Deshabilitar todo (Modo Lectura)
+                inputs.forEach(i => i.disabled = true);
+                
+                // Ocultar Guardar, Mostrar Editar/Borrar
+                btnGuardar.classList.add('hidden');
+                btnEditar.classList.remove('hidden');
+                btnEliminar.classList.remove('hidden');
+            }
         }
+
+        // Función para activar edición
+        window.activarEdicion = function() {
+            const inputs = document.querySelectorAll('#formCita input:not([type=hidden]), #formCita textarea');
+            inputs.forEach(i => i.disabled = false);
+            
+            document.getElementById('btnEditar').classList.add('hidden');
+            document.getElementById('btnEliminar').classList.add('hidden');
+            document.getElementById('btnGuardar').classList.remove('hidden');
+            document.getElementById('btnGuardar').innerText = "Guardar Cambios";
+        }
+
+        // (Las funciones globales ya están definidas al inicio del script)
+
     </script>
 </body>
 </html>
+<!-- Version: 2025-12-03-FIX-BORRADO-v2 -->
