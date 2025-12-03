@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediCitas | Sistema 100% Personalizable</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Ajuste para ver mejor las etiquetas de hora */
+        .fc-timegrid-slot-label-cushion { font-size: 0.85em; font-weight: 600; color: #64748b; }
+        .fc-event { cursor: pointer; border: none; }
+        /* Ocultar scrollbar feo */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 font-sans text-gray-800 min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <i class="fas fa-heartbeat text-emerald-500 text-2xl"></i>
+            <div class="text-2xl font-bold text-gray-700">
+                Medi<span class="text-emerald-500">Citas</span>
+                <span class="text-xs font-normal text-gray-400 ml-2">Pro v2.0</span>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="text-sm text-gray-500">
+                <i class="fas fa-code text-emerald-500"></i> 
+                100% FastAPI + SQLAlchemy
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenedor Principal -->
+    <div class="container mx-auto p-6 flex flex-col lg:flex-row gap-6 h-[calc(100vh-90px)]">
+        
+        <!-- Panel Lateral -->
+        <div class="w-full lg:w-1/4 space-y-4">
+            
+            <!-- Selector de Doctor -->
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-3 flex items-center">
+                    <i class="fas fa-user-md mr-2 text-emerald-500"></i>
+                    Seleccionar Especialista
+                </label>
+                <select id="doctorSelect" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-gray-50 transition-all hover:border-emerald-300 cursor-pointer">
+                    <option value="" disabled selected>-- Elige un Doctor --</option>
+                    {% for doctor in doctores %}
+                    <option value="{{ doctor.id }}" data-duracion="{{ doctor.duracion_cita }}">
+                        Dr/a. {{ doctor.nombre }} ({{ doctor.especialidad }})
+                    </option>
+                    {% endfor %}
+                </select>
+                <div id="infoDuracion" class="mt-3 bg-emerald-50 text-emerald-700 p-3 rounded-lg text-sm hidden">
+                    <i class="fas fa-clock mr-2"></i>
+                    Bloques de <span id="spanDuracion" class="font-bold"></span> minutos
+                </div>
+            </div>
+
+            <!-- Instrucciones -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl shadow-lg border border-blue-100">
+                <p class="font-bold mb-3 text-blue-800 flex items-center">
+                    <i class="fas fa-info-circle mr-2"></i> Instrucciones:
+                </p>
+                <ol class="text-sm text-blue-700 space-y-2">
+                    <li class="flex items-start">
+                        <span class="font-bold mr-2">1.</span>
+                        <span>Selecciona un doctor del menú</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="font-bold mr-2">2.</span>
+                        <span>Haz clic en un espacio vacío del calendario</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="font-bold mr-2">3.</span>
+                        <span>Completa los datos del paciente</span>
+                    </li>
+                </ol>
+            </div>
+
+            <!-- Leyenda -->
+            <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+                <p class="font-bold mb-3 text-gray-700 text-sm uppercase flex items-center">
+                    <i class="fas fa-palette mr-2 text-emerald-500"></i> Leyenda:
+                </p>
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-red-500 rounded mr-3"></div>
+                        <span class="text-gray-600">Horario Ocupado</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 bg-white border-2 border-gray-300 rounded mr-3"></div>
+                        <span class="text-gray-600">Horario Disponible</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Personalización -->
+            <div class="bg-gray-800 p-4 rounded-xl shadow-lg text-center">
+                <p class="text-xs text-gray-400">
+                    <i class="fas fa-wrench text-emerald-400"></i>
+                    100% Código Personalizable
+                </p>
+                <p class="text-xs text-gray-500 mt-1">Sin frameworks pesados</p>
+            </div>
+        </div>
+
+        <!-- Calendario -->
+        <div class="w-full lg:w-3/4 bg-white p-6 rounded-xl shadow-lg border border-gray-100 overflow-hidden flex flex-col">
+            <div id='calendar' class="flex-grow"></div>
+        </div>
+    </div>
+
+    <!-- Modal para Nueva Cita -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-60 hidden flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 transform transition-all scale-100 animate-fadeIn">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                    <i class="fas fa-calendar-plus text-emerald-500 mr-3"></i>
+                    Nueva Cita
+                </h2>
+                <button onclick="cerrarModal()" class="text-gray-400 hover:text-gray-600 transition">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            
+            <form id="formCita" class="space-y-4">
+                <input type="hidden" id="fechaInicio">
+                
+                <!-- CI con búsqueda -->
+                <div class="relative">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <i class="fas fa-id-card text-emerald-500 mr-2"></i>
+                        Cédula de Identidad
+                    </label>
+                    <input 
+                        type="text" 
+                        id="ci" 
+                        class="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all" 
+                        required 
+                        placeholder="Ej: 1234567"
+                        autocomplete="off">
+                    <div id="sugerencias" class="absolute z-10 w-full bg-white shadow-xl rounded-lg mt-1 hidden max-h-48 overflow-y-auto"></div>
+                </div>
+
+                <!-- Nombre -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <i class="fas fa-user text-emerald-500 mr-2"></i>
+                        Nombre Completo
+                    </label>
+                    <input 
+                        type="text" 
+                        id="nombre" 
+                        class="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all" 
+                        required 
+                        placeholder="Nombre del paciente">
+                </div>
+
+                <!-- Teléfono -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <i class="fas fa-phone text-emerald-500 mr-2"></i>
+                        Teléfono (Opcional)
+                    </label>
+                    <input 
+                        type="tel" 
+                        id="telefono" 
+                        class="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all" 
+                        placeholder="Ej: 70123456">
+                </div>
+
+                <!-- Motivo -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <i class="fas fa-notes-medical text-emerald-500 mr-2"></i>
+                        Motivo de Consulta
+                    </label>
+                    <textarea 
+                        id="motivo" 
+                        class="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all resize-none" 
+                        rows="3"
+                        placeholder="Describe el motivo de la consulta"></textarea>
+                </div>
+
+                <!-- Horarios -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-clock text-emerald-500 mr-2"></i>
+                            Hora Inicio
+                        </label>
+                        <input 
+                            type="time" 
+                            id="horaInicio" 
+                            class="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all" 
+                            required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-clock text-emerald-500 mr-2"></i>
+                            Hora Fin
+                        </label>
+                        <input 
+                            type="time" 
+                            id="horaFin" 
+                            class="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all" 
+                            readonly>
+                    </div>
+                </div>
+
+                <!-- Checkbox para personalizar hora -->
+                <div class="flex items-center">
+                    <input 
+                        type="checkbox" 
+                        id="personalizarHora" 
+                        class="w-4 h-4 text-emerald-500 border-gray-300 rounded focus:ring-emerald-500">
+                    <label for="personalizarHora" class="ml-2 text-sm text-gray-700">
+                        Personalizar hora de inicio manualmente
+                    </label>
+                </div>
+
+                <!-- Botones -->
+                <div class="flex gap-3 mt-6">
+                    <button 
+                        type="button" 
+                        onclick="cerrarModal()" 
+                        class="flex-1 py-3 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all font-semibold">
+                        <i class="fas fa-times mr-2"></i>Cancelar
+                    </button>
+                    <button 
+                        type="submit" 
+                        class="flex-1 py-3 text-white bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all font-bold shadow-lg">
+                        <i class="fas fa-check mr-2"></i>Confirmar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let calendar;
+        const modal = document.getElementById('modal');
+        const doctorSelect = document.getElementById('doctorSelect');
+        const infoDuracion = document.getElementById('infoDuracion');
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const calendarEl = document.getElementById('calendar');
+            
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'timeGridWeek',
+                locale: 'es',
+                slotMinTime: '08:00:00',
+                slotMaxTime: '20:00:00',
+                allDaySlot: false,
+                slotDuration: '00:15:00',
+                slotLabelInterval: '00:15',
+                slotLabelFormat: {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    omitZeroMinute: false,
+                    meridiem: false,
+                    hour12: false
+                },
+                hiddenDays: [0], // Domingo oculto
+                headerToolbar: { 
+                    left: 'prev,next today', 
+                    center: 'title', 
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay' 
+                },
+                selectable: true,
+                selectMirror: true,
+                events: [],
+                buttonText: {
+                    today: 'Hoy',
+                    month: 'Mes',
+                    week: 'Semana',
+                    day: 'Día'
+                },
+
+                select: function(info) {
+                    if(!doctorSelect.value) {
+                        Swal.fire({
+                            title: 'Selecciona un Doctor',
+                            text: 'Elige un especialista del menú izquierdo primero.',
+                            icon: 'warning',
+                            confirmButtonColor: '#10b981'
+                        });
+                        return;
+                    }
+                    
+                    // Extraer hora de inicio del slot seleccionado
+                    const fechaInicio = new Date(info.start);
+                    const horaInicio = fechaInicio.toTimeString().slice(0, 5); // HH:MM
+                    
+                    document.getElementById('fechaInicio').value = info.startStr;
+                    document.getElementById('horaInicio').value = horaInicio;
+                    
+                    // Calcular hora fin automáticamente
+                    actualizarHoraFin();
+                    
+                    modal.classList.remove('hidden');
+                },
+
+                eventClick: function(info) {
+                    const evento = info.event;
+                    Swal.fire({
+                        title: evento.title,
+                        html: `
+                            <div class="text-left space-y-2">
+                                <p><strong>CI:</strong> ${evento.extendedProps.ci}</p>
+                                <p><strong>Motivo:</strong> ${evento.extendedProps.motivo}</p>
+                                <p><strong>Hora:</strong> ${evento.start.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</p>
+                            </div>
+                        `,
+                        icon: 'info',
+                        confirmButtonColor: '#10b981'
+                    });
+                }
+            });
+            calendar.render();
+        });
+
+        // Cambio de doctor -> Cargar citas
+        doctorSelect.addEventListener('change', async (e) => {
+            const docId = e.target.value;
+            const duracion = e.target.options[e.target.selectedIndex].getAttribute('data-duracion');
+            
+            // Mostrar info de duración
+            infoDuracion.classList.remove('hidden');
+            document.getElementById('spanDuracion').textContent = duracion;
+            
+            // Limpiar eventos actuales
+            calendar.getEventSources().forEach(src => src.remove());
+            
+            // Cargar nuevos desde la API
+            const response = await fetch(`/api/citas/${docId}`);
+            const eventos = await response.json();
+            calendar.addEventSource(eventos);
+        });
+
+        // Búsqueda predictiva de pacientes
+        let timeoutBusqueda;
+        document.getElementById('ci').addEventListener('input', async (e) => {
+            const query = e.target.value;
+            const sugerencias = document.getElementById('sugerencias');
+            
+            if (query.length < 3) {
+                sugerencias.classList.add('hidden');
+                return;
+            }
+
+            clearTimeout(timeoutBusqueda);
+            timeoutBusqueda = setTimeout(async () => {
+                const response = await fetch(`/api/buscar-paciente?q=${query}`);
+                const pacientes = await response.json();
+                
+                if (pacientes.length > 0) {
+                    sugerencias.innerHTML = pacientes.map(p => `
+                        <div class="p-3 hover:bg-emerald-50 cursor-pointer border-b border-gray-100 flex justify-between items-center"
+                             onclick="seleccionarPaciente('${p.ci}', '${p.nombre}', '${p.telefono}')">
+                            <div>
+                                <div class="font-semibold text-gray-800">${p.nombre}</div>
+                                <div class="text-sm text-gray-500">CI: ${p.ci}</div>
+                            </div>
+                            <i class="fas fa-check text-emerald-500"></i>
+                        </div>
+                    `).join('');
+                    sugerencias.classList.remove('hidden');
+                } else {
+                    sugerencias.classList.add('hidden');
+                }
+            }, 300);
+        });
+
+        function seleccionarPaciente(ci, nombre, telefono) {
+            document.getElementById('ci').value = ci;
+            document.getElementById('nombre').value = nombre;
+            document.getElementById('telefono').value = telefono;
+            document.getElementById('sugerencias').classList.add('hidden');
+        }
+
+        // Enviar formulario
+        document.getElementById('formCita').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Construir fecha_inicio completa con la hora personalizada
+            const fechaBase = document.getElementById('fechaInicio').value.split('T')[0]; // YYYY-MM-DD
+            const horaInicio = document.getElementById('horaInicio').value; // HH:MM
+            const fechaInicioCompleta = `${fechaBase}T${horaInicio}:00`;
+            
+            const formData = new FormData();
+            formData.append('doctor_id', doctorSelect.value);
+            formData.append('fecha_inicio_str', fechaInicioCompleta);
+            formData.append('paciente_ci', document.getElementById('ci').value);
+            formData.append('paciente_nombre', document.getElementById('nombre').value);
+            formData.append('paciente_telefono', document.getElementById('telefono').value);
+            formData.append('motivo', document.getElementById('motivo').value);
+
+            try {
+                const res = await fetch('/agendar', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if(res.ok) {
+                    Swal.fire({
+                        title: '¡Agendado!',
+                        text: data.msg,
+                        icon: 'success',
+                        confirmButtonColor: '#10b981'
+                    });
+                    cerrarModal();
+                    doctorSelect.dispatchEvent(new Event('change'));
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.msg,
+                        icon: 'error',
+                        confirmButtonColor: '#ef4444'
+                    });
+                }
+            } catch (err) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Error de conexión con el servidor',
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        });
+
+        // Función para calcular hora fin automáticamente
+        function actualizarHoraFin() {
+            const horaInicio = document.getElementById('horaInicio').value;
+            if (!horaInicio || !doctorSelect.value) return;
+            
+            const duracion = parseInt(doctorSelect.options[doctorSelect.selectedIndex].getAttribute('data-duracion'));
+            
+            // Convertir hora de inicio a minutos
+            const [horas, minutos] = horaInicio.split(':').map(Number);
+            const minutosInicio = horas * 60 + minutos;
+            
+            // Sumar duración
+            const minutosFin = minutosInicio + duracion;
+            const horasFin = Math.floor(minutosFin / 60);
+            const minFin = minutosFin % 60;
+            
+            // Formatear hora fin
+            const horaFin = `${String(horasFin).padStart(2, '0')}:${String(minFin).padStart(2, '0')}`;
+            document.getElementById('horaFin').value = horaFin;
+        }
+        
+        // Event listeners para los campos de tiempo
+        document.getElementById('horaInicio').addEventListener('change', function() {
+            if (!document.getElementById('personalizarHora').checked) {
+                actualizarHoraFin();
+            }
+        });
+        
+        document.getElementById('personalizarHora').addEventListener('change', function() {
+            const horaFinInput = document.getElementById('horaFin');
+            if (this.checked) {
+                horaFinInput.removeAttribute('readonly');
+                horaFinInput.focus();
+            } else {
+                horaFinInput.setAttribute('readonly', true);
+                actualizarHoraFin();
+            }
+        });
+
+        function cerrarModal() {
+            modal.classList.add('hidden');
+            document.getElementById('formCita').reset();
+            document.getElementById('sugerencias').classList.add('hidden');
+            document.getElementById('horaFin').setAttribute('readonly', true);
+            document.getElementById('personalizarHora').checked = false;
+        }
+
+        // Cerrar modal al hacer clic fuera
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) cerrarModal();
+        });
+    </script>
+</body>
+</html>

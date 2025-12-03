@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediCitas | Final</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.8/index.global.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/timegrid@6.1.8/index.global.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/interaction@6.1.8/index.global.min.js'></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        /* --- SOLUCIÓN VISUAL FINAL (Corregida) --- */
+
+        /* 1. Ocultar texto original de TODOS los botones */
+        .fc-button-primary {
+            font-size: 0 !important; /* Hace desaparecer el texto duplicado */
+            line-height: 0 !important;
+            min-width: 70px !important; /* Mantiene el ancho del botón */
+            position: relative;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            height: 38px !important;
+        }
+
+        /* 2. Crear texto NUEVO y LIMPIO */
+        .fc-button-primary::after {
+            font-size: 14px !important; /* Restaura tamaño de letra */
+            line-height: 1.5 !important;
+            font-weight: 600;
+            color: white;
+            text-transform: capitalize;
+            position: absolute;
+        }
+
+        /* 3. Asignar nombres correctos a cada botón */
+        .fc-today-button::after { content: 'Hoy'; }
+        .fc-dayGridMonth-button::after { content: 'Mes'; }
+        
+        /* ¡AQUÍ ESTABA EL ERROR! Corregido a dayGridWeek */
+        .fc-dayGridWeek-button::after { content: 'Semana'; } 
+        
+        .fc-timeGridDay-button::after { content: 'Día'; }
+
+        /* 4. Flechas de navegación (No usan font-size 0 para no ocultar ícono) */
+        .fc-prev-button, .fc-next-button {
+            font-size: 14px !important; 
+            line-height: 1.5 !important;
+            min-width: 40px !important;
+            background-color: #10b981 !important;
+            border-color: #059669 !important;
+        }
+
+        /* --- ESTILOS GENERALES DEL CALENDARIO --- */
+        
+        /* Limpieza de horas duplicadas (7:007:00) */
+        .fc-timegrid-slot-label-cushion {
+            font-size: 0 !important; /* Ocultar original */
+        }
+        .fc-timegrid-slot-label-cushion::after {
+            content: attr(aria-label); /* Poner hora limpia */
+            font-size: 12px !important;
+            color: #64748b;
+        }
+
+        /* Colores y bordes */
+        .fc-button-active { background-color: #047857 !important; border-color: #047857 !important; }
+        .fc-timegrid-slot { height: 3.5em !important; }
+        .fc-event { cursor: pointer; border: none; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800">
+
+    <nav class="bg-white shadow-sm border-b border-slate-200 px-6 py-3 flex justify-between items-center z-20 relative">
+        <div class="text-xl font-bold text-slate-700 flex items-center gap-2">
+            <span class="bg-emerald-500 text-white rounded p-1 text-sm">MC</span> 
+            Medi<span class="text-emerald-600">Citas</span>
+        </div>
+        <div class="text-xs font-mono text-slate-400">v8.0 Render Manual</div>
+    </nav>
+
+    <div class="flex flex-col md:flex-row h-[calc(100vh-60px)]">
+        
+        <div class="w-full md:w-72 bg-white border-r border-slate-200 p-5 flex flex-col gap-6 z-10 shadow-lg">
+            
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Especialista</label>
+                <select id="doctorSelect" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-medium text-slate-700">
+                    <option value="" disabled selected>Seleccione Doctor...</option>
+                    {% for doctor in doctores %}
+                    <option value="{{ doctor.id }}" data-duracion="{{ doctor.duracion_cita }}">
+                        {{ doctor.nombre }} ({{ doctor.especialidad }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="panelRapido" class="bg-emerald-50 rounded-xl p-4 border border-emerald-100 hidden">
+                <div class="flex items-center gap-2 mb-3 text-emerald-800 border-b border-emerald-200 pb-2">
+                    <span class="text-sm font-bold">⏱ Agenda Express</span>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs text-emerald-600">Hora Exacta (HH:MM):</label>
+                    <div class="flex gap-2">
+                        <input type="time" id="inputHoraRapida" step="60" class="flex-1 p-2 rounded-lg border border-emerald-200 text-sm font-mono focus:border-emerald-500 outline-none bg-white">
+                        <button onclick="usarReservaRapida()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 rounded-lg font-bold shadow-md transition-transform active:scale-95">IR</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-auto bg-slate-50 p-3 rounded-lg border border-slate-100">
+                <p class="text-[10px] text-slate-400 font-bold mb-2 uppercase">Ayuda:</p>
+                <ul class="text-[11px] text-slate-500 space-y-1 list-disc pl-4">
+                    <li>Vista <b>Día</b> para detalles.</li>
+                    <li>Clic en celdas para agendar.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="flex-grow bg-white p-2 md:p-4 overflow-hidden relative">
+            <div id="calendar" class="h-full w-full"></div>
+        </div>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-slate-900/60 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-slate-100 transform transition-all scale-100">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Nueva Cita</h2>
+                    <p class="text-xs text-emerald-600 font-medium mt-1 capitalize" id="modalFechaTitulo">Fecha</p>
+                </div>
+                <button onclick="cerrarModal()" class="text-slate-400 hover:text-red-500 text-2xl">&times;</button>
+            </div>
+
+            <form id="formCita" class="space-y-4">
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="flex gap-3 items-center">
+                        <div class="w-1/2">
+                            <label class="text-[10px] text-slate-400 mb-1 block uppercase font-bold">Inicio</label>
+                            <input type="time" id="horaInicioInput" step="60" class="w-full p-2 border border-emerald-300 rounded bg-white text-emerald-700 font-mono font-bold focus:ring-2 focus:ring-emerald-500 outline-none">
+                        </div>
+                        <span class="text-slate-300">➜</span>
+                        <div class="w-1/2">
+                            <label class="text-[10px] text-slate-400 mb-1 block uppercase font-bold">Fin</label>
+                            <input type="time" id="horaFinInput" class="w-full p-2 border border-slate-200 rounded bg-slate-100 text-slate-500 font-mono" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <input type="text" id="ci" class="w-full bg-slate-50 border-b-2 border-slate-200 p-2 focus:border-emerald-500 focus:bg-white outline-none" required placeholder="Cédula de Identidad">
+                    <input type="text" id="nombre" class="w-full bg-slate-50 border-b-2 border-slate-200 p-2 focus:border-emerald-500 focus:bg-white outline-none" required placeholder="Nombre Completo">
+                    <textarea id="motivo" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:border-emerald-500 outline-none resize-none h-20" placeholder="Motivo de la consulta..."></textarea>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="cerrarModal()" class="flex-1 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-semibold">Cancelar</button>
+                    <button type="submit" class="flex-1 py-2 text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg text-sm font-bold shadow-lg shadow-emerald-500/30">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let calendar;
+        const modal = document.getElementById('modal');
+        const doctorSelect = document.getElementById('doctorSelect');
+        const panelRapido = document.getElementById('panelRapido');
+        const modalFechaTitulo = document.getElementById('modalFechaTitulo');
+        
+        const horaInicioInput = document.getElementById('horaInicioInput');
+        const horaFinInput = document.getElementById('horaFinInput');
+        const inputHoraRapida = document.getElementById('inputHoraRapida');
+
+        let duracionDoctor = 30;
+        let fechaActualDia = new Date();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const calendarEl = document.getElementById('calendar');
+            
+            // Definimos el locale fuera para evitar caché de configuraciones
+            const localeEs = {
+                code: 'es-custom', // Nombre único para forzar limpieza
+                week: { dow: 1, doy: 4 },
+                buttonText: {
+                    prev: '<',
+                    next: '>',
+                    today: 'Hoy',
+                    month: 'Mes',
+                    week: 'Semana',
+                    day: 'Día',
+                    list: 'Lista'
+                },
+                weekText: 'Sm',
+                allDayText: 'Todo el día',
+                moreLinkText: 'más',
+                noEventsText: 'No hay eventos'
+            };
+
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                locale: localeEs,
+                initialView: 'dayGridMonth', 
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,dayGridWeek,timeGridDay'
+                },
+
+                slotMinTime: '07:00:00',
+                slotMaxTime: '20:00:00',
+                allDaySlot: false,
+                slotDuration: '00:15:00',
+                
+                // 1. FORZAR RENDERIZADO DE HORAS (Elimina "7:007:00")
+                slotLabelContent: function(arg) {
+                    return { html: `<span class="text-xs font-mono text-slate-500">${arg.text}</span>` };
+                },
+                slotLabelFormat: {
+                    hour: '2-digit', minute: '2-digit', omitZeroMinute: false, meridiem: false, hour12: false
+                },
+
+                // 2. FORZAR RENDERIZADO DE DÍAS (Elimina "miémiércoles")
+                dayHeaderContent: function(arg) {
+                    // Formateamos la fecha nosotros mismos usando JS nativo
+                    let texto = arg.date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'numeric' });
+                    // Quitamos puntos si existen (mié. -> mié)
+                    texto = texto.replace('.', ''); 
+                    return { html: `<span class="capitalize text-slate-700 font-semibold">${texto}</span>` };
+                },
+
+                // 3. FORZAR FORMATO DE TÍTULO (Elimina duplicados en título)
+                titleFormat: { year: 'numeric', month: 'long', day: 'numeric' },
+
+                selectable: true,
+                navLinks: false,
+                
+                dateClick: function(info) {
+                    if (info.view.type !== 'timeGridDay') {
+                        calendar.changeView('timeGridDay', info.dateStr);
+                        fechaActualDia = info.date;
+                    } else {
+                        if(!validarDoctor()) return;
+                        abrirModal(info.date);
+                    }
+                },
+
+                select: function(info) {
+                    if(info.view.type === 'timeGridDay') {
+                         if(!validarDoctor()) return;
+                         abrirModal(info.start);
+                    }
+                },
+
+                eventClick: function(info) {
+                    const evento = info.event;
+                    Swal.fire({
+                        title: evento.title,
+                        html: `
+                            <div class="text-left space-y-2">
+                                <p><strong>CI:</strong> ${evento.extendedProps.ci || 'N/A'}</p>
+                                <p><strong>Motivo:</strong> ${evento.extendedProps.motivo || 'N/A'}</p>
+                                <p><strong>Hora:</strong> ${evento.start.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</p>
+                            </div>
+                        `,
+                        icon: 'info',
+                        confirmButtonColor: '#10b981'
+                    });
+                }
+            });
+            calendar.render();
+        });
+
+        function validarDoctor() {
+            if(!doctorSelect.value) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Falta Especialista',
+                    text: 'Por favor seleccione un doctor primero.',
+                    confirmButtonColor: '#10b981'
+                });
+                return false;
+            }
+            return true;
+        }
+
+        function abrirModal(fechaDate) {
+            fechaActualDia = fechaDate;
+            
+            const horas = String(fechaDate.getHours()).padStart(2, '0');
+            const minutos = String(fechaDate.getMinutes()).padStart(2, '0');
+            
+            horaInicioInput.value = `${horas}:${minutos}`;
+            actualizarHoraFin();
+            
+            const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            modalFechaTitulo.textContent = fechaDate.toLocaleDateString('es-ES', opcionesFecha);
+
+            modal.classList.remove('hidden');
+        }
+
+        window.usarReservaRapida = function() {
+            if(!validarDoctor()) return;
+            
+            const horaStr = inputHoraRapida.value;
+            if(!horaStr) {
+                Swal.fire('Atención', 'Ingrese una hora válida', 'warning');
+                return;
+            }
+
+            const fechaBase = calendar.getDate(); 
+            const [h, m] = horaStr.split(':');
+            fechaBase.setHours(h);
+            fechaBase.setMinutes(m);
+
+            abrirModal(fechaBase);
+        }
+
+        doctorSelect.addEventListener('change', async (e) => {
+            const docId = e.target.value;
+            duracionDoctor = parseInt(e.target.options[e.target.selectedIndex].getAttribute('data-duracion'));
+            
+            panelRapido.classList.remove('hidden');
+
+            calendar.getEventSources().forEach(src => src.remove());
+            try {
+                const response = await fetch(`/api/citas/${docId}`);
+                const eventos = await response.json();
+                
+                const eventosFC = eventos.map(ev => ({
+                    title: 'Ocupado',
+                    start: ev.start,
+                    end: ev.end,
+                    backgroundColor: '#ef4444',
+                    borderColor: '#ef4444',
+                    display: 'block',
+                    extendedProps: {
+                        ci: ev.ci,
+                        motivo: ev.motivo
+                    }
+                }));
+                calendar.addEventSource(eventosFC);
+            } catch (err) { console.error("Error cargando citas", err); }
+        });
+
+        horaInicioInput.addEventListener('change', actualizarHoraFin);
+        
+        function actualizarHoraFin() {
+            if(!horaInicioInput.value) return;
+            const [h, m] = horaInicioInput.value.split(':').map(Number);
+            const fin = new Date();
+            fin.setHours(h);
+            fin.setMinutes(m + duracionDoctor);
+            horaFinInput.value = `${String(fin.getHours()).padStart(2,'0')}:${String(fin.getMinutes()).padStart(2,'0')}`;
+        }
+
+        document.getElementById('formCita').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const fechaStr = fechaActualDia.toISOString().split('T')[0];
+            const fechaISO = `${fechaStr}T${horaInicioInput.value}:00`;
+
+            const formData = new FormData();
+            formData.append('doctor_id', doctorSelect.value);
+            formData.append('fecha_inicio_str', fechaISO);
+            formData.append('paciente_ci', document.getElementById('ci').value);
+            formData.append('paciente_nombre', document.getElementById('nombre').value);
+            formData.append('motivo', document.getElementById('motivo').value);
+
+            try {
+                const res = await fetch('/agendar', { method: 'POST', body: formData });
+                const data = await res.json();
+                if(res.ok) {
+                    cerrarModal();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Agendado',
+                        text: `Cita confirmada para las ${horaInicioInput.value}`,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    doctorSelect.dispatchEvent(new Event('change'));
+                } else {
+                    Swal.fire('Error', data.msg, 'error');
+                }
+            } catch (error) {
+                Swal.fire('Error', 'Fallo de conexión', 'error');
+            }
+        });
+
+        window.cerrarModal = function() {
+            modal.classList.add('hidden');
+            document.getElementById('formCita').reset();
+        }
+    </script>
+</body>
+</html>
