@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from typing import Optional
+import re
 import database, models
 
 # --- CONFIGURACIÓN INICIAL ---
@@ -134,6 +135,7 @@ async def obtener_citas(doctor_id: int, db: Session = Depends(get_db)):
                         "cita_id": cita.id,
                         "ci": ci_paciente,
                         "nombre": nombre_paciente,
+                        "telefono": str(cita.paciente.telefono) if cita.paciente and cita.paciente.telefono else "",
                         "motivo": str(cita.motivo) if cita.motivo else ""
                     }
                 })
@@ -166,26 +168,42 @@ async def buscar_paciente(q: str, db: Session = Depends(get_db)):
 
 @app.post("/agendar")
 async def agendar_cita(
-    cita_id: Optional[int] = Form(None),  # <--- Nuevo campo opcional para edición
+    cita_id: Optional[int] = Form(None),
     doctor_id: int = Form(...),
     fecha_inicio_str: str = Form(...),
     fecha_fin_str: str = Form(...),
     paciente_ci: str = Form(...),
     paciente_nombre: str = Form(...),
-    paciente_telefono: str = Form(default=""),
+    paciente_telefono: str = Form(...),
     motivo: str = Form(...),
     db: Session = Depends(get_db)
 ):
     """Agendar cita con hora de fin manual (soporta creación y edición)"""
     
-    # 1. Convertir fechas
+    # 1. VALIDACIONES BOLIVIANAS (Seguridad Backend)
+    
+    # Validar Celular: Empieza con 6 o 7, y tiene 8 dígitos en total
+    if not re.match(r"^[67]\d{7}$", paciente_telefono):
+        return JSONResponse(
+            content={"status": "error", "msg": "El celular debe ser boliviano (8 dígitos, empieza con 6 o 7)"}, 
+            status_code=400
+        )
+
+    # Validar CI: Solo números, entre 5 y 10 dígitos (Formato estándar Bolivia)
+    if not re.match(r"^\d{5,10}$", paciente_ci):
+        return JSONResponse(
+            content={"status": "error", "msg": "El C.I. no es válido (solo números, 5-10 dígitos)"}, 
+            status_code=400
+        )
+    
+    # 2. Convertir fechas
     try:
         fecha_inicio = datetime.fromisoformat(fecha_inicio_str.replace('Z', '+00:00'))
         fecha_fin = datetime.fromisoformat(fecha_fin_str.replace('Z', '+00:00'))
     except ValueError:
         return JSONResponse(content={"status": "error", "msg": "Formato de fecha inválido"}, status_code=400)
 
-    # 2. VALIDACIÓN: ¿Hay choque de horario? (Excluyendo la cita actual si es edición)
+    # 3. VALIDACIÓN: ¿Hay choque de horario? (Excluyendo la cita actual si es edición)
     query_choque = db.query(models.Cita).filter(
         models.Cita.doctor_id == doctor_id,
         models.Cita.activo == True,
@@ -193,12 +211,12 @@ async def agendar_cita(
         models.Cita.fecha_fin > fecha_inicio
     )
     if cita_id:
-        query_choque = query_choque.filter(models.Cita.id != cita_id)  # Ignorarse a sí misma
+        query_choque = query_choque.filter(models.Cita.id != cita_id)
 
     if query_choque.first():
         return JSONResponse(content={"status": "error", "msg": "⛔ HORARIO OCUPADO"}, status_code=400)
 
-    # 3. Gestionar Paciente (Buscar o Crear)
+    # 4. Gestionar Paciente (Buscar o Crear)
     paciente = db.query(models.Paciente).filter(models.Paciente.ci == paciente_ci).first()
     if not paciente:
         # No existe: Crear nuevo paciente
@@ -207,7 +225,7 @@ async def agendar_cita(
         db.commit()
         db.refresh(paciente)
     else:
-        # Ya existe: Actualizar nombre por si lo corrigieron
+        # Ya existe: Actualizar datos por si los corrigieron
         paciente.nombre = paciente_nombre
         paciente.telefono = paciente_telefono
         db.commit()

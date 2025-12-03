@@ -165,8 +165,25 @@
                 <input type="hidden" id="citaId">
 
                 <div class="space-y-3">
-                    <input type="text" id="ci" class="w-full bg-slate-50 border-b-2 border-slate-200 p-2 focus:border-emerald-500 focus:bg-white outline-none" required placeholder="Cédula de Identidad">
-                    <input type="text" id="nombre" class="w-full bg-slate-50 border-b-2 border-slate-200 p-2 focus:border-emerald-500 focus:bg-white outline-none" required placeholder="Nombre Completo">
+                    <div>
+                        <label class="text-xs text-slate-500 font-bold ml-1">Cédula de Identidad (Bolivia)</label>
+                        <input type="number" id="ci" class="w-full bg-slate-50 border-b-2 border-slate-200 p-2 focus:border-emerald-500 focus:bg-white outline-none" required placeholder="Ej: 5678901">
+                    </div>
+
+                    <div>
+                        <label class="text-xs text-slate-500 font-bold ml-1">Nombre Completo</label>
+                        <input type="text" id="nombre" class="w-full bg-slate-50 border-b-2 border-slate-200 p-2 focus:border-emerald-500 focus:bg-white outline-none" required placeholder="Nombre del Paciente">
+                    </div>
+
+                    <div>
+                        <label class="text-xs text-slate-500 font-bold ml-1">Celular (Bolivia)</label>
+                        <div class="relative">
+                            <span class="absolute left-2 top-2 text-slate-400 text-sm">+591</span>
+                            <input type="number" id="telefono" class="w-full bg-slate-50 border-b-2 border-slate-200 p-2 pl-12 focus:border-emerald-500 focus:bg-white outline-none" required placeholder="Ej: 70712345">
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-1 ml-1">* Debe iniciar con 6 o 7 y tener 8 dígitos.</p>
+                    </div>
+
                     <textarea id="motivo" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 focus:border-emerald-500 outline-none resize-none h-20" placeholder="Motivo de la consulta..."></textarea>
                 </div>
 
@@ -396,6 +413,7 @@
                     // Cargar datos del paciente
                     document.getElementById('ci').value = props.ci || '';
                     document.getElementById('nombre').value = props.nombre || '';
+                    document.getElementById('telefono').value = props.telefono || '';
                     document.getElementById('motivo').value = props.motivo || '';
 
                     // Cargar horas
@@ -499,6 +517,26 @@
         document.getElementById('formCita').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            // --- VALIDACIONES BOLIVIA ---
+            const ci = document.getElementById('ci').value;
+            const telefono = document.getElementById('telefono').value;
+
+            // Regex Celular: Empieza con 6 o 7, seguido de 7 dígitos (Total 8)
+            const regexCelular = /^[67]\d{7}$/;
+            // Regex CI: Solo números, min 5 max 10
+            const regexCI = /^\d{5,10}$/;
+
+            if (!regexCI.test(ci)) {
+                Swal.fire('Error en CI', 'El CI debe ser un número válido boliviano (5-10 dígitos).', 'warning');
+                return;
+            }
+
+            if (!regexCelular.test(telefono)) {
+                Swal.fire('Error en Celular', 'El número debe ser boliviano: 8 dígitos y empezar con 6 o 7.', 'warning');
+                return;
+            }
+            // -----------------------------
+            
             const fechaStr = fechaActualDia.toISOString().split('T')[0];
             
             // Construimos ambas fechas completas
@@ -514,14 +552,14 @@
             const formData = new FormData();
             const citaId = document.getElementById('citaId').value;
             if (citaId) {
-                formData.append('cita_id', citaId); // <--- AGREGAR ID para edición
+                formData.append('cita_id', citaId);
             }
             formData.append('doctor_id', doctorSelect.value);
             formData.append('fecha_inicio_str', fechaInicioISO);
             formData.append('fecha_fin_str', fechaFinISO);
-            formData.append('paciente_ci', document.getElementById('ci').value);
+            formData.append('paciente_ci', ci);
             formData.append('paciente_nombre', document.getElementById('nombre').value);
-            formData.append('paciente_telefono', ''); // Por ahora vacío, se puede agregar campo después
+            formData.append('paciente_telefono', telefono);
             formData.append('motivo', document.getElementById('motivo').value);
 
             try {
