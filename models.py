@@ -41,3 +41,12 @@ class Cita(Base):
     # Relaciones
     doctor = relationship("Doctor", back_populates="citas")
     paciente = relationship("Paciente", back_populates="citas")
+
+class Configuracion(Base):
+    """Tabla de Configuración Global - Panel Administrativo"""
+    __tablename__ = "configuracion"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    nombre_consultorio = Column(String, default="MediCitas")
+    hora_apertura = Column(String, default="08:00")  # Formato "HH:MM"
+    hora_cierre = Column(String, default="20:00")    # Formato "HH:MM"

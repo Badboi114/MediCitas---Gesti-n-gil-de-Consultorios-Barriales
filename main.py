@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, Request, Form
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -11,7 +11,7 @@ import database, models
 # Creamos las tablas en la BD automáticamente al iniciar
 models.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI(title="MediCitas Pro - 100% Personalizable")
+app = FastAPI(title="Sistema Integral MediCitas")
 templates = Jinja2Templates(directory="templates")
 
 # Dependencia para obtener la sesión de BD en cada petición
@@ -22,27 +22,87 @@ def get_db():
     finally:
         db.close()
 
-# --- RUTAS DE LA APLICACIÓN ---
-
+# --- 1. LANDING PAGE (La Entrada) ---
 @app.get("/", response_class=HTMLResponse)
-async def home(request: Request, db: Session = Depends(get_db)):
-    """Renderiza la página principal"""
+async def landing(request: Request):
+    """Página de entrada con dos opciones: AdminMediCitas y MediCitas"""
+    return templates.TemplateResponse("landing.html", {"request": request})
+
+# --- 2. MEDICITAS (Lado Público/Recepción) ---
+@app.get("/medicitas", response_class=HTMLResponse)
+async def public_calendar(request: Request, db: Session = Depends(get_db)):
+    """Calendario interactivo para recepción de pacientes"""
+    # Obtener configuración
+    config = db.query(models.Configuracion).first()
+    if not config:
+        config = models.Configuracion()  # Defaults
+        db.add(config)
+        db.commit()
+        db.refresh(config)
+    
     doctores = db.query(models.Doctor).all()
     
-    # Si no hay doctores, creamos algunos de prueba para que no se vea vacío
+    # Si no hay doctores, creamos algunos de prueba
     if not doctores:
         doctores_prueba = [
-            models.Doctor(nombre="Juan Pérez", especialidad="Medicina General", duracion_cita=30),
-            models.Doctor(nombre="María López", especialidad="Cardiología", duracion_cita=45),
-            models.Doctor(nombre="Carlos Rodríguez", especialidad="Pediatría", duracion_cita=30),
-            models.Doctor(nombre="Ana García", especialidad="Odontología", duracion_cita=40),
+            models.Doctor(nombre="Dr. Juan Pérez", especialidad="Medicina General", duracion_cita=30),
+            models.Doctor(nombre="Dra. María López", especialidad="Cardiología", duracion_cita=45),
+            models.Doctor(nombre="Dr. Carlos Rodríguez", especialidad="Pediatría", duracion_cita=30),
         ]
         for doc in doctores_prueba:
             db.add(doc)
         db.commit()
         doctores = db.query(models.Doctor).all()
         
-    return templates.TemplateResponse("index.html", {"request": request, "doctores": doctores})
+    return templates.TemplateResponse("index.html", {
+        "request": request, 
+        "doctores": doctores,
+        "config": config  # Pasamos la configuración al calendario
+    })
+
+# --- 3. ADMIN MEDICITAS (Back Office) ---
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
+    """Panel de Control Administrativo con Vista Tabular"""
+    # Vista Tabular de Auditoría
+    citas = db.query(models.Cita).order_by(models.Cita.fecha_inicio.desc()).all()
+    config = db.query(models.Configuracion).first()
+    if not config:
+        config = models.Configuracion()
+        db.add(config)
+        db.commit()
+        db.refresh(config)
+    
+    # Resumen rápido
+    total_citas = len(citas)
+    total_doctores = db.query(models.Doctor).count()
+    
+    return templates.TemplateResponse("admin.html", {
+        "request": request, 
+        "citas": citas, 
+        "config": config,
+        "stats": {"total": total_citas, "docs": total_doctores}
+    })
+
+# API: Actualizar Configuración
+@app.post("/admin/config")
+async def update_config(
+    hora_apertura: str = Form(...),
+    hora_cierre: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Actualizar configuración global del consultorio"""
+    config = db.query(models.Configuracion).first()
+    if not config:
+        config = models.Configuracion()
+        db.add(config)
+    
+    config.hora_apertura = hora_apertura
+    config.hora_cierre = hora_cierre
+    db.commit()
+    return RedirectResponse(url="/admin", status_code=303)
+
+# --- APIS EXISTENTES (Sin cambios mayores) ---
 
 @app.get("/api/citas/{doctor_id}")
 async def obtener_citas(doctor_id: int, db: Session = Depends(get_db)):
