@@ -111,6 +111,21 @@
                                    class="w-full p-3 border rounded-lg bg-slate-50 font-mono text-lg">
                         </div>
                     </div>
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-3">Días Laborales (Marque los días que trabajan)</label>
+                        <div class="flex gap-3 flex-wrap">
+                            {% for dia, label in [('1','Lunes'), ('2','Martes'), ('3','Miércoles'), ('4','Jueves'), ('5','Viernes'), ('6','Sábado'), ('0','Domingo')] %}
+                            <label class="inline-flex items-center bg-slate-50 px-4 py-3 rounded-lg border-2 border-slate-200 cursor-pointer hover:bg-emerald-50 hover:border-emerald-300 transition">
+                                <input type="checkbox" name="dias" value="{{ dia }}" class="form-checkbox text-emerald-500 rounded h-5 w-5" 
+                                {% if dia in config.dias_laborales %}checked{% endif %}>
+                                <span class="ml-2 font-bold text-sm">{{ label }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <p class="text-xs text-amber-600 mt-2">* Los días no marcados estarán ocultos en el calendario público</p>
+                    </div>
+                    
                     <button type="submit" class="w-full py-3 bg-slate-800 text-white rounded-lg hover:bg-slate-900 font-bold shadow-lg transform active:scale-95 transition">
                         Guardar Cambios Paramétricos
                     </button>
@@ -134,26 +149,36 @@
                 <table class="w-full text-left border-collapse">
                     <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-bold">
                         <tr>
-                            <th class="p-4 border-b">Nombre</th>
-                            <th class="p-4 border-b">Especialidad</th>
-                            <th class="p-4 border-b">Duración Cita</th>
+                            <th class="p-4 border-b">Doctor</th>
+                            <th class="p-4 border-b">Contacto</th>
+                            <th class="p-4 border-b">Horario</th>
                             <th class="p-4 border-b text-right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 text-sm">
                         {% for doc in doctores %}
                         <tr class="hover:bg-slate-50 group">
-                            <td class="p-4 font-bold text-slate-700">{{ doc.nombre }}</td>
                             <td class="p-4">
-                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                                    {{ doc.especialidad }}
-                                </span>
+                                <div class="font-bold text-slate-700">{{ doc.nombre }}</div>
+                                <div class="text-xs text-slate-400">{{ doc.especialidad }}</div>
                             </td>
-                            <td class="p-4 text-slate-500">{{ doc.duracion_cita }} min</td>
+                            <td class="p-4">
+                                <div class="text-xs">CI: {{ doc.ci }}</div>
+                                <div class="text-xs">Tel: {{ doc.telefono }}</div>
+                                <div class="text-xs text-blue-500">{{ doc.correo }}</div>
+                            </td>
+                            <td class="p-4 text-xs">
+                                {% if doc.hora_entrada %}
+                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded">Personal: {{ doc.hora_entrada }} - {{ doc.hora_salida }}</span>
+                                {% else %}
+                                    <span class="bg-slate-100 text-slate-500 px-2 py-1 rounded">Usa Horario Global</span>
+                                {% endif %}
+                                <div class="mt-1 text-slate-400">{{ doc.duracion_cita }} min/cita</div>
+                            </td>
                             <td class="p-4 text-right space-x-2">
-                                <button onclick='editarDoctor({{ doc.id }}, "{{ doc.nombre }}", "{{ doc.especialidad }}", {{ doc.duracion_cita }})' 
+                                <button onclick='editarDoctor("{{doc.id}}", "{{doc.nombre}}", "{{doc.especialidad}}", "{{doc.duracion_cita}}", "{{doc.ci}}", "{{doc.telefono}}", "{{doc.correo}}", "{{doc.hora_entrada}}", "{{doc.hora_salida}}")' 
                                         class="text-blue-500 hover:underline font-semibold">Editar</button>
-                                <button onclick="borrarDoctor({{ doc.id }})" 
+                                <button onclick="borrarDoctor('{{doc.id}}')" 
                                         class="text-red-500 hover:underline font-semibold">Eliminar</button>
                             </td>
                         </tr>
@@ -168,7 +193,13 @@
 
         <!-- SECCIÓN: Pacientes -->
         <section id="sec-pacientes" class="section-content fade-in">
-            <h2 class="text-2xl font-bold text-slate-800 mb-6">👥 Directorio de Pacientes e Historiales Clínicos</h2>
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-800">👥 Directorio de Pacientes e Historiales Clínicos</h2>
+                <button onclick="document.getElementById('modalNuevoPaciente').classList.remove('hidden')" 
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow-md transition">
+                    + Nuevo Paciente
+                </button>
+            </div>
             <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                 <table class="w-full text-sm text-left">
                     <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-bold">
@@ -329,12 +360,51 @@
                            class="w-full border rounded p-2 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200" 
                            placeholder="Ej: Dentista, Pediatra, Dermatólogo...">
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Duración Cita (Minutos)</label>
-                    <input type="number" name="duracion" id="docDuracion" required value="30" min="15" max="120" step="5"
-                           class="w-full border rounded p-2 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200">
+                
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">CI</label>
+                        <input type="text" name="ci" id="docCI" required 
+                               class="w-full border rounded p-2 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200" 
+                               placeholder="Cédula">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Teléfono</label>
+                        <input type="text" name="telefono" id="docTel" required 
+                               class="w-full border rounded p-2 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200" 
+                               placeholder="Celular">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Duración (min)</label>
+                        <input type="number" name="duracion" id="docDuracion" required value="30" min="15" max="120" step="5"
+                               class="w-full border rounded p-2 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200">
+                    </div>
                 </div>
-                <div class="flex gap-2 pt-2">
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Correo Electrónico</label>
+                    <input type="email" name="correo" id="docCorreo" required 
+                           class="w-full border rounded p-2 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200" 
+                           placeholder="correo@ejemplo.com">
+                </div>
+                
+                <hr class="my-2">
+                <p class="text-xs font-bold text-slate-500 mb-2">⏰ Horario Personalizado (Dejar vacío para usar horario global)</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Hora Entrada</label>
+                        <input type="time" name="hora_entrada" id="docEntrada" 
+                               class="w-full border rounded p-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1">Hora Salida</label>
+                        <input type="time" name="hora_salida" id="docSalida" 
+                               class="w-full border rounded p-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                    </div>
+                </div>
+                <p class="text-xs text-amber-600 mt-1">💡 Si se define, este horario sobrescribe el global solo para este doctor</p>
+                
+                <div class="flex gap-2 pt-4">
                     <button type="button" onclick="cerrarModalDoctor()" 
                             class="flex-1 py-2 bg-slate-100 rounded text-slate-600 font-bold hover:bg-slate-200 transition">
                         Cancelar
@@ -343,6 +413,33 @@
                             class="flex-1 py-2 bg-emerald-500 rounded text-white font-bold hover:bg-emerald-600 transition">
                         Guardar
                     </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Nuevo Paciente -->
+    <div id="modalNuevoPaciente" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-[400px]">
+            <h3 class="text-lg font-bold mb-4 text-slate-800">👤 Registrar Nuevo Paciente</h3>
+            <form action="/admin/paciente/crear" method="POST" class="space-y-3">
+                <input type="text" name="ci" required placeholder="Cédula de Identidad" 
+                       class="w-full border rounded p-2 outline-none focus:border-blue-500">
+                <input type="text" name="nombre" required placeholder="Nombre Completo" 
+                       class="w-full border rounded p-2 outline-none focus:border-blue-500">
+                <input type="text" name="telefono" required placeholder="Teléfono (8 dígitos)" 
+                       class="w-full border rounded p-2 outline-none focus:border-blue-500">
+                <textarea name="alergias" placeholder="Alergias conocidas" 
+                          class="w-full border rounded p-2 h-16 outline-none focus:border-blue-500"></textarea>
+                <textarea name="cirugias" placeholder="Cirugías previas" 
+                          class="w-full border rounded p-2 h-16 outline-none focus:border-blue-500"></textarea>
+                <textarea name="notas" placeholder="Notas médicas adicionales" 
+                          class="w-full border rounded p-2 h-16 outline-none focus:border-blue-500"></textarea>
+                <div class="flex gap-2">
+                    <button type="button" onclick="document.getElementById('modalNuevoPaciente').classList.add('hidden')" 
+                            class="flex-1 py-2 bg-slate-100 rounded font-bold hover:bg-slate-200">Cancelar</button>
+                    <button type="submit" 
+                            class="flex-1 py-2 bg-blue-500 text-white rounded font-bold hover:bg-blue-600">Registrar</button>
                 </div>
             </form>
         </div>
@@ -484,6 +581,11 @@
             document.getElementById('docNombre').value = '';
             document.getElementById('docEspecialidad').value = '';
             document.getElementById('docDuracion').value = '30';
+            document.getElementById('docCI').value = '';
+            document.getElementById('docTel').value = '';
+            document.getElementById('docCorreo').value = '';
+            document.getElementById('docEntrada').value = '';
+            document.getElementById('docSalida').value = '';
             document.getElementById('modalDocTitle').innerText = "Nuevo Especialista";
             document.getElementById('modalDoctor').classList.remove('hidden');
         }
@@ -492,11 +594,16 @@
             document.getElementById('modalDoctor').classList.add('hidden');
         }
 
-        function editarDoctor(id, nombre, esp, dur) {
+        function editarDoctor(id, nombre, esp, dur, ci, tel, correo, entrada, salida) {
             document.getElementById('docId').value = id;
             document.getElementById('docNombre').value = nombre;
             document.getElementById('docEspecialidad').value = esp;
             document.getElementById('docDuracion').value = dur;
+            document.getElementById('docCI').value = ci;
+            document.getElementById('docTel').value = tel;
+            document.getElementById('docCorreo').value = correo;
+            document.getElementById('docEntrada').value = (entrada && entrada !== 'None') ? entrada : '';
+            document.getElementById('docSalida').value = (salida && salida !== 'None') ? salida : '';
             document.getElementById('modalDocTitle').innerText = "Editar Especialista";
             document.getElementById('modalDoctor').classList.remove('hidden');
         }

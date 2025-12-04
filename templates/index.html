@@ -31,7 +31,14 @@
         <div class="text-xl font-bold text-slate-700 flex items-center gap-2">
             <span class="bg-emerald-500 text-white rounded p-1 text-sm">MC</span> Medi<span class="text-emerald-600">Citas</span>
         </div>
+        
+        {% if es_admin %}
+        <a href="/admin" class="bg-slate-800 text-white text-xs px-4 py-2 rounded-full font-bold hover:bg-slate-700 transition shadow-lg flex items-center gap-2">
+            ⚙️ Volver al Panel Admin
+        </a>
+        {% else %}
         <a href="/" class="text-xs text-slate-400 hover:text-emerald-600">Volver al Inicio</a>
+        {% endif %}
     </nav>
 
     <div class="flex flex-col md:flex-row h-[calc(100vh-60px)]">
@@ -41,9 +48,19 @@
                 <select id="doctorSelect" class="w-full p-3 bg-slate-50 border rounded-xl text-sm outline-none">
                     <option value="" disabled selected>Seleccione Doctor...</option>
                     {% for doctor in doctores %}
-                    <option value="{{ doctor.id }}" data-duracion="{{ doctor.duracion_cita }}">{{ doctor.nombre }}</option>
+                    <option value="{{ doctor.id }}" 
+                            data-duracion="{{ doctor.duracion_cita }}"
+                            data-entrada="{{ doctor.hora_entrada if doctor.hora_entrada else config.hora_apertura }}"
+                            data-salida="{{ doctor.hora_salida if doctor.hora_salida else config.hora_cierre }}">
+                        {{ doctor.nombre }} ({{ doctor.especialidad }})
+                    </option>
                     {% endfor %}
                 </select>
+            </div>
+            
+            <div id="infoHorario" class="hidden bg-blue-50 p-3 rounded-lg text-xs text-blue-800 border border-blue-100">
+                <p class="font-bold">Horario de Atención:</p>
+                <p><span id="spanEntrada"></span> - <span id="spanSalida"></span></p>
             </div>
             <div class="mt-auto bg-slate-50 p-3 rounded-lg border border-slate-100">
                 <p class="text-[10px] text-slate-400 font-bold mb-2 uppercase">Ayuda:</p>
@@ -274,10 +291,23 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const calendarEl = document.getElementById('calendar');
+            
+            // CONFIGURACIÓN DE DÍAS (Convertimos string "1,2,3" a array [1,2,3])
+            const diasLaboralesStr = "{{ config.dias_laborales }}";
+            const diasLaborales = diasLaboralesStr.split(',').map(Number);
+            const allDays = [0, 1, 2, 3, 4, 5, 6];
+            const hiddenDays = allDays.filter(d => !diasLaborales.includes(d));
+            
             calendar = new FullCalendar.Calendar(calendarEl, {
                 locale: 'es', initialView: 'dayGridMonth', 
                 headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,dayGridWeek,timeGridDay' },
-                slotMinTime: '07:00:00', slotMaxTime: '20:00:00', allDaySlot: false, slotDuration: '00:15:00',
+                
+                // CONFIGURACIÓN DINÁMICA
+                hiddenDays: hiddenDays, // Oculta días no laborales globalmente
+                slotMinTime: '{{ config.hora_apertura }}:00', 
+                slotMaxTime: '{{ config.hora_cierre }}:00',
+                
+                allDaySlot: false, slotDuration: '00:15:00',
                 slotLabelContent: function(arg) { return { html: `<span class="text-xs font-mono text-slate-500">${arg.text}</span>` }; },
                 slotLabelFormat: { hour: '2-digit', minute: '2-digit', omitZeroMinute: false, meridiem: false, hour12: false },
                 dayHeaderContent: function(arg) {
@@ -327,6 +357,32 @@
             calendar.render();
         });
 
+        // CAMBIO DE DOCTOR (Lógica Horarios Personalizados)
+        doctorSelect.addEventListener('change', async (e) => {
+            const docId = e.target.value;
+            const option = e.target.options[e.target.selectedIndex];
+            
+            // Leer datos del option
+            duracionDoctor = parseInt(option.getAttribute('data-duracion'));
+            const horaEntrada = option.getAttribute('data-entrada');
+            const horaSalida = option.getAttribute('data-salida');
+
+            // Actualizar calendario visualmente
+            calendar.setOption('slotMinTime', horaEntrada + ':00');
+            calendar.setOption('slotMaxTime', horaSalida + ':00');
+            
+            // Mostrar info
+            document.getElementById('infoHorario').classList.remove('hidden');
+            document.getElementById('spanEntrada').innerText = horaEntrada;
+            document.getElementById('spanSalida').innerText = horaSalida;
+
+            // Recargar citas
+            calendar.getEventSources().forEach(src => src.remove());
+            const res = await fetch(`/api/citas/${docId}`);
+            const ev = await res.json();
+            calendar.addEventSource(ev);
+        });
+
         function abrirModalNuevo(fechaDate) {
             resetearFormulario('nuevo');
             fechaActualDia = fechaDate;
@@ -338,15 +394,6 @@
             document.getElementById('modalFechaTitulo').innerText = fechaDate.toLocaleDateString('es-ES', op);
             modal.classList.remove('hidden');
         }
-
-        doctorSelect.addEventListener('change', async (e) => {
-            const docId = e.target.value;
-            duracionDoctor = parseInt(e.target.options[e.target.selectedIndex].getAttribute('data-duracion'));
-            calendar.getEventSources().forEach(src => src.remove());
-            const res = await fetch(`/api/citas/${docId}`);
-            const ev = await res.json();
-            calendar.addEventSource(ev);
-        });
 
         horaInicioInput.addEventListener('change', actualizarHoraFin);
         function actualizarHoraFin() {

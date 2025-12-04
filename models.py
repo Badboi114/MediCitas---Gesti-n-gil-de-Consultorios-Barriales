@@ -10,6 +10,15 @@ class Doctor(Base):
     nombre = Column(String, index=True)
     especialidad = Column(String)
     duracion_cita = Column(Integer, default=30)  # Minutos por cita
+    
+    # --- NUEVOS CAMPOS ---
+    ci = Column(String, default="")
+    telefono = Column(String, default="")
+    correo = Column(String, default="")
+    
+    # Horarios Personalizados (Si están vacíos, usa el global)
+    hora_entrada = Column(String, nullable=True)  # Ej: "09:00"
+    hora_salida = Column(String, nullable=True)   # Ej: "16:00"
 
     # Relación con citas
     citas = relationship("Cita", back_populates="doctor")
@@ -55,6 +64,8 @@ class Configuracion(Base):
     nombre_consultorio = Column(String, default="MediCitas")
     hora_apertura = Column(String, default="08:00")  # Formato "HH:MM"
     hora_cierre = Column(String, default="20:00")    # Formato "HH:MM"
+    # Días laborales: String separado por comas (0=Domingo, 1=Lunes...)
+    dias_laborales = Column(String, default="1,2,3,4,5")
 
 class Admin(Base):
     """Tabla de Administrador - Sistema de Login"""

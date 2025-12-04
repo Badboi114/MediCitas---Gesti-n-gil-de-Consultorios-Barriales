@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
 import re
 import database, models
 
@@ -111,11 +111,15 @@ async def public_calendar(request: Request, db: Session = Depends(get_db)):
             db.add(doc)
         db.commit()
         doctores = db.query(models.Doctor).all()
+    
+    # Verificamos si es admin para mostrar el botón de "Volver al Panel"
+    es_admin = verificar_sesion(request)
         
     return templates.TemplateResponse("index.html", {
         "request": request, 
         "doctores": doctores,
-        "config": config  # Pasamos la configuración al calendario
+        "config": config,  # Pasamos la configuración al calendario
+        "es_admin": es_admin
     })
 
 # --- 4. ADMIN MEDICITAS (Back Office) - PROTEGIDO ---
@@ -187,6 +191,7 @@ async def update_admin_profile(
 async def update_config(
     hora_apertura: str = Form(...),
     hora_cierre: str = Form(...),
+    dias: List[str] = Form([]),  # Recibe lista de checkboxes (ej: ["1", "2", "3"])
     db: Session = Depends(get_db)
 ):
     """Actualizar configuración global del consultorio"""
@@ -197,6 +202,7 @@ async def update_config(
     
     config.hora_apertura = hora_apertura
     config.hora_cierre = hora_cierre
+    config.dias_laborales = ",".join(dias)  # Guardamos como "1,2,3"
     db.commit()
     return RedirectResponse(url="/admin", status_code=303)
 
@@ -208,6 +214,11 @@ async def guardar_doctor(
     nombre: str = Form(...),
     especialidad: str = Form(...),
     duracion: int = Form(...),
+    ci: str = Form(...),
+    telefono: str = Form(...),
+    correo: str = Form(...),
+    hora_entrada: Optional[str] = Form(None),
+    hora_salida: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     """Crear o editar un doctor"""
@@ -218,13 +229,23 @@ async def guardar_doctor(
             doc.nombre = nombre
             doc.especialidad = especialidad
             doc.duracion_cita = duracion
+            doc.ci = ci
+            doc.telefono = telefono
+            doc.correo = correo
+            doc.hora_entrada = hora_entrada if hora_entrada else None
+            doc.hora_salida = hora_salida if hora_salida else None
             db.commit()
     else:
         # Crear nuevo doctor
         nuevo = models.Doctor(
-            nombre=nombre, 
-            especialidad=especialidad, 
-            duracion_cita=duracion
+            nombre=nombre,
+            especialidad=especialidad,
+            duracion_cita=duracion,
+            ci=ci,
+            telefono=telefono,
+            correo=correo,
+            hora_entrada=hora_entrada if hora_entrada else None,
+            hora_salida=hora_salida if hora_salida else None
         )
         db.add(nuevo)
         db.commit()
@@ -290,6 +311,43 @@ async def guardar_paciente(
         db.commit()
         return RedirectResponse(url="/admin", status_code=303)
     return JSONResponse({"status": "error", "msg": "Paciente no encontrado"}, status_code=404)
+
+# --- NUEVA RUTA: CREAR PACIENTE DESDE ADMIN ---
+@app.post("/admin/paciente/crear")
+async def crear_paciente_admin(
+    ci: str = Form(...),
+    nombre: str = Form(...),
+    telefono: str = Form(...),
+    alergias: str = Form(default="Ninguna conocida"),
+    cirugias: str = Form(default="Ninguna"),
+    notas: str = Form(default=""),
+    db: Session = Depends(get_db)
+):
+    """Crear un nuevo paciente desde el panel de administración"""
+    # Validar formato boliviano
+    if not re.match(r"^[67]\d{7}$", telefono):
+        return RedirectResponse(url="/admin?error=telefono_invalido", status_code=303)
+    
+    if not re.match(r"^\d{5,10}$", ci):
+        return RedirectResponse(url="/admin?error=ci_invalido", status_code=303)
+    
+    # Verificar si ya existe
+    pac_existente = db.query(models.Paciente).filter(models.Paciente.ci == ci).first()
+    if pac_existente:
+        return RedirectResponse(url="/admin?error=paciente_existe", status_code=303)
+    
+    # Crear nuevo paciente
+    nuevo_paciente = models.Paciente(
+        ci=ci,
+        nombre=nombre,
+        telefono=telefono,
+        alergias=alergias if alergias else "Ninguna conocida",
+        cirugias=cirugias if cirugias else "Ninguna",
+        notas_medicas=notas
+    )
+    db.add(nuevo_paciente)
+    db.commit()
+    return RedirectResponse(url="/admin", status_code=303)
 
 @app.post("/admin/paciente/borrar")
 async def borrar_paciente(pac_id: int = Form(...), db: Session = Depends(get_db)):
