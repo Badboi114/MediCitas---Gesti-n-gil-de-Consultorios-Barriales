@@ -98,7 +98,7 @@ async def public_calendar(request: Request, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(config)
     
-    doctores = db.query(models.Doctor).all()
+    doctores = db.query(models.Doctor).filter(models.Doctor.activo == True).all()
     
     # Si no hay doctores, creamos algunos de prueba
     if not doctores:
@@ -110,7 +110,7 @@ async def public_calendar(request: Request, db: Session = Depends(get_db)):
         for doc in doctores_prueba:
             db.add(doc)
         db.commit()
-        doctores = db.query(models.Doctor).all()
+        doctores = db.query(models.Doctor).filter(models.Doctor.activo == True).all()
     
     # Verificamos si es admin para mostrar el botón de "Volver al Panel"
     es_admin = verificar_sesion(request)
@@ -139,11 +139,11 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(config)
     
-    # Obtener lista de pacientes para el admin
-    pacientes = db.query(models.Paciente).all()
+    # Obtener lista de pacientes para el admin (solo activos)
+    pacientes = db.query(models.Paciente).filter(models.Paciente.activo == True).all()
     
-    # Obtener lista de doctores
-    doctores = db.query(models.Doctor).all()
+    # Obtener lista de doctores (solo activos)
+    doctores = db.query(models.Doctor).filter(models.Doctor.activo == True).all()
     
     # Obtener datos del admin actual
     admin_data = db.query(models.Admin).first()
@@ -253,22 +253,11 @@ async def guardar_doctor(
 
 @app.post("/admin/doctor/borrar")
 async def borrar_doctor(doc_id: int = Form(...), db: Session = Depends(get_db)):
-    """Eliminar un doctor"""
+    """Soft delete: Marcar doctor como inactivo"""
     doc = db.query(models.Doctor).filter(models.Doctor.id == doc_id).first()
     if doc:
-        # Verificar si tiene citas futuras
-        citas_futuras = db.query(models.Cita).filter(
-            models.Cita.doctor_id == doc_id,
-            models.Cita.fecha_inicio > datetime.now()
-        ).count()
-        
-        if citas_futuras > 0:
-            return JSONResponse({
-                "status": "error", 
-                "msg": f"No se puede eliminar. Tiene {citas_futuras} cita(s) pendiente(s)"
-            }, status_code=400)
-        
-        db.delete(doc)
+        # Soft delete: marcar como inactivo
+        doc.activo = False
         db.commit()
         return JSONResponse({"status": "ok"})
     return JSONResponse({"status": "error", "msg": "Doctor no encontrado"}, status_code=404)
@@ -349,15 +338,36 @@ async def crear_paciente_admin(
     db.commit()
     return RedirectResponse(url="/admin", status_code=303)
 
+# --- NUEVA API: BÚSQUEDA DE PACIENTE POR CI ---
+@app.get("/api/paciente/{ci}")
+async def get_paciente(ci: str, db: Session = Depends(get_db)):
+    """API para buscar paciente por CI (autocompletado en agenda)"""
+    p = db.query(models.Paciente).filter(
+        models.Paciente.ci == ci, 
+        models.Paciente.activo == True
+    ).first()
+    
+    if p:
+        return JSONResponse({
+            "encontrado": True,
+            "nombre": p.nombre,
+            "telefono": p.telefono,
+            "alergias": p.alergias,
+            "cirugias": p.cirugias,
+            "notas": p.notas_medicas
+        })
+    return JSONResponse({"encontrado": False})
+
+# --- ACTUALIZADO: SOFT DELETE DE PACIENTE ---
 @app.post("/admin/paciente/borrar")
 async def borrar_paciente(pac_id: int = Form(...), db: Session = Depends(get_db)):
-    """Eliminar un paciente y todas sus citas"""
+    """Soft delete: Marcar paciente como inactivo en lugar de eliminarlo"""
     pac = db.query(models.Paciente).filter(models.Paciente.id == pac_id).first()
     if pac:
-        # Eliminar todas las citas asociadas primero
-        db.query(models.Cita).filter(models.Cita.paciente_id == pac_id).delete()
-        # Eliminar el paciente
-        db.delete(pac)
+        # Soft delete: marcar como inactivo
+        pac.activo = False
+        # También desactivar sus citas
+        db.query(models.Cita).filter(models.Cita.paciente_id == pac_id).update({"activo": False})
         db.commit()
         return JSONResponse({"status": "ok"})
     return JSONResponse({"status": "error", "msg": "Paciente no encontrado"}, status_code=404)
@@ -413,26 +423,12 @@ async def obtener_citas(doctor_id: int, db: Session = Depends(get_db)):
         return []
 
 # API: Buscar Paciente por CI Exacto (Para autocompletado en formulario)
-@app.get("/api/paciente/{ci}")
-async def get_paciente(ci: str, db: Session = Depends(get_db)):
-    """Buscar paciente por CI para autocompletar datos y cargar historial"""
-    paciente = db.query(models.Paciente).filter(models.Paciente.ci == ci).first()
-    if paciente:
-        return JSONResponse({
-            "encontrado": True,
-            "nombre": paciente.nombre,
-            "telefono": paciente.telefono,
-            "alergias": paciente.alergias or "Ninguna conocida",
-            "cirugias": paciente.cirugias or "Ninguna",
-            "notas": paciente.notas_medicas or ""
-        })
-    return JSONResponse({"encontrado": False})
-
 @app.get("/api/buscar-paciente")
 async def buscar_paciente(q: str, db: Session = Depends(get_db)):
-    """API para búsqueda predictiva de pacientes por CI"""
+    """API para búsqueda predictiva de pacientes por CI (solo activos)"""
     pacientes = db.query(models.Paciente).filter(
-        models.Paciente.ci.like(f"{q}%")
+        models.Paciente.ci.like(f"{q}%"),
+        models.Paciente.activo == True
     ).limit(5).all()
     
     resultados = []
@@ -521,6 +517,9 @@ async def agendar_cita(
         paciente.alergias = paciente_alergias
         paciente.cirugias = paciente_cirugias
         paciente.notas_medicas = paciente_notas
+        # Reactivar si estaba inactivo
+        if not paciente.activo:
+            paciente.activo = True
         db.commit()
 
     if cita_id:

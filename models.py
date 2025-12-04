@@ -19,6 +19,9 @@ class Doctor(Base):
     # Horarios Personalizados (Si están vacíos, usa el global)
     hora_entrada = Column(String, nullable=True)  # Ej: "09:00"
     hora_salida = Column(String, nullable=True)   # Ej: "16:00"
+    
+    # Soft Delete
+    activo = Column(Boolean, default=True)
 
     # Relación con citas
     citas = relationship("Cita", back_populates="doctor")
@@ -31,6 +34,9 @@ class Paciente(Base):
     ci = Column(String, unique=True, index=True)
     nombre = Column(String)
     telefono = Column(String)
+    
+    # Soft Delete
+    activo = Column(Boolean, default=True)
     
     # --- CAMPOS DE HISTORIAL MÉDICO ---
     alergias = Column(Text, default="Ninguna conocida")

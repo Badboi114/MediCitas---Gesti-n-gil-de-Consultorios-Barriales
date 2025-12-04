@@ -63,7 +63,7 @@
         </nav>
 
         <div class="p-4 border-t border-slate-800">
-            <a href="/medicitas" target="_blank" class="block mb-2 text-center text-xs bg-emerald-600 hover:bg-emerald-700 py-2 rounded text-white font-bold transition">
+            <a href="/medicitas" class="block mb-2 text-center text-xs bg-emerald-600 hover:bg-emerald-700 py-2 rounded text-white font-bold transition">
                 Abrir Agenda Pública ↗
             </a>
             <a href="/logout" class="text-sm text-red-400 hover:text-red-300 flex items-center gap-2 justify-center font-bold">
@@ -704,13 +704,13 @@
 
         async function borrarPaciente(id) {
             const res = await Swal.fire({
-                title: '¿Eliminar Paciente?',
-                text: "Se eliminarán también todas sus citas asociadas. Esta acción no se puede deshacer.",
+                title: '¿Dar de Baja al Paciente?',
+                text: "El paciente será marcado como inactivo pero sus datos permanecerán en el sistema.",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
                 cancelButtonColor: '#64748b',
-                confirmButtonText: 'Sí, eliminar',
+                confirmButtonText: 'Sí, dar de baja',
                 cancelButtonText: 'Cancelar'
             });
             
@@ -728,16 +728,16 @@
                     if(response.ok) {
                         await Swal.fire({
                             icon: 'success',
-                            title: 'Eliminado',
-                            text: 'El paciente ha sido eliminado correctamente',
+                            title: 'Paciente Inactivo',
+                            text: 'El paciente ha sido dado de baja del sistema',
                             timer: 2000
                         });
                         location.reload();
                     } else {
                         await Swal.fire({
                             icon: 'error',
-                            title: 'No se pudo eliminar',
-                            text: data.msg || 'Error al eliminar paciente'
+                            title: 'No se pudo dar de baja',
+                            text: data.msg || 'Error al dar de baja al paciente'
                         });
                     }
                 } catch(error) {
