@@ -145,12 +145,16 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     # Obtener lista de doctores (solo activos)
     doctores = db.query(models.Doctor).filter(models.Doctor.activo == True).all()
     
+    # Obtener INACTIVOS para la papelera
+    pacientes_inactivos = db.query(models.Paciente).filter(models.Paciente.activo == False).all()
+    doctores_inactivos = db.query(models.Doctor).filter(models.Doctor.activo == False).all()
+    
     # Obtener datos del admin actual
     admin_data = db.query(models.Admin).first()
     
     # Resumen rápido
     total_citas = len(citas)
-    total_doctores = db.query(models.Doctor).count()
+    total_doctores = db.query(models.Doctor).filter(models.Doctor.activo == True).count()
     total_pacientes = len(pacientes)
     
     return templates.TemplateResponse("admin.html", {
@@ -158,6 +162,8 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         "citas": citas,
         "pacientes": pacientes,
         "doctores": doctores,
+        "pacientes_inactivos": pacientes_inactivos,
+        "doctores_inactivos": doctores_inactivos,
         "config": config,
         "admin": admin_data,
         "stats": {"total": total_citas, "docs": total_doctores, "pacs": total_pacientes}
@@ -362,15 +368,39 @@ async def get_paciente(ci: str, db: Session = Depends(get_db)):
 @app.post("/admin/paciente/borrar")
 async def borrar_paciente(pac_id: int = Form(...), db: Session = Depends(get_db)):
     """Soft delete: Marcar paciente como inactivo en lugar de eliminarlo"""
+    print(f"🔴 BORRAR PACIENTE - ID recibido: {pac_id}")
     pac = db.query(models.Paciente).filter(models.Paciente.id == pac_id).first()
     if pac:
+        print(f"🔴 Paciente encontrado: {pac.nombre} (CI: {pac.ci})")
         # Soft delete: marcar como inactivo
         pac.activo = False
         # También desactivar sus citas
         db.query(models.Cita).filter(models.Cita.paciente_id == pac_id).update({"activo": False})
         db.commit()
+        print(f"✅ Paciente {pac_id} marcado como inactivo")
+        return JSONResponse({"status": "ok"})
+    print(f"❌ Paciente {pac_id} NO encontrado")
+    return JSONResponse({"status": "error", "msg": "Paciente no encontrado"}, status_code=404)
+
+@app.post("/admin/paciente/restaurar")
+async def restaurar_paciente(pac_id: int = Form(...), db: Session = Depends(get_db)):
+    """Restaurar paciente inactivo"""
+    pac = db.query(models.Paciente).filter(models.Paciente.id == pac_id).first()
+    if pac:
+        pac.activo = True
+        db.commit()
         return JSONResponse({"status": "ok"})
     return JSONResponse({"status": "error", "msg": "Paciente no encontrado"}, status_code=404)
+
+@app.post("/admin/doctor/restaurar")
+async def restaurar_doctor(doc_id: int = Form(...), db: Session = Depends(get_db)):
+    """Restaurar doctor inactivo"""
+    doc = db.query(models.Doctor).filter(models.Doctor.id == doc_id).first()
+    if doc:
+        doc.activo = True
+        db.commit()
+        return JSONResponse({"status": "ok"})
+    return JSONResponse({"status": "error", "msg": "Doctor no encontrado"}, status_code=404)
 
 # --- APIS EXISTENTES (Sin cambios mayores) ---
 
@@ -459,6 +489,8 @@ async def agendar_cita(
 ):
     """Agendar cita con hora de fin manual (soporta creación y edición) + Historial Médico"""
     
+    print(f"🔵 AGENDAR CITA - Recibido: doctor_id={doctor_id}, ci={paciente_ci}, nombre={paciente_nombre}")
+    
     # 1. VALIDACIONES BOLIVIANAS (Seguridad Backend)
     
     # Validar Celular: Empieza con 6 o 7, y tiene 8 dígitos en total
@@ -543,8 +575,10 @@ async def agendar_cita(
         )
         db.add(nueva_cita)
         mensaje = "✅ Cita agendada con éxito"
-
+    
+    print(f"🟢 Guardando cita en BD...")
     db.commit()
+    print(f"✅ Cita guardada exitosamente. Paciente ID: {paciente.id}, Cita modo: {'edición' if cita_id else 'nueva'}")
     return JSONResponse(content={"status": "ok", "msg": mensaje})
 
 # Nueva API para Borrar - VERSIÓN SIMPLIFICADA

@@ -7,6 +7,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        /* Forzar que el sidebar siempre mantenga su ancho */
+        #sidebar {
+            min-width: 16rem !important;
+            max-width: 16rem !important;
+            width: 16rem !important;
+            flex-shrink: 0 !important;
+        }
+        
         .nav-item.active { 
             background-color: #374151; 
             border-left: 4px solid #10b981; 
@@ -30,7 +38,7 @@
 <body class="bg-slate-100 font-sans text-slate-800 flex h-screen overflow-hidden">
 
     <!-- Sidebar -->
-    <aside class="w-64 bg-slate-900 text-white flex flex-col shadow-2xl z-20">
+    <aside id="sidebar" style="width: 16rem; min-width: 16rem; max-width: 16rem; flex-shrink: 0;" class="bg-slate-900 text-white flex flex-col shadow-2xl z-20">
         <div class="p-6 text-2xl font-bold border-b border-slate-800 flex items-center gap-2">
             <span class="bg-emerald-500 w-2 h-8 rounded-full"></span> 
             <span>Admin<span class="text-emerald-400">Panel</span></span>
@@ -54,6 +62,9 @@
             </button>
             <button onclick="showSection('citas')" class="nav-item w-full text-left p-3 rounded hover:bg-slate-800 transition flex items-center gap-3">
                 📅 Auditoría de Citas
+            </button>
+            <button onclick="showSection('papelera')" class="nav-item w-full text-left p-3 rounded hover:bg-slate-800 transition flex items-center gap-3">
+                🗑️ Papelera (Inactivos)
             </button>
             
             <p class="px-3 text-xs font-bold text-slate-500 uppercase mb-2 mt-6">Cuenta</p>
@@ -289,6 +300,82 @@
                 {% if not citas %}
                 <p class="p-8 text-center text-slate-400 italic">No hay citas registradas en el sistema.</p>
                 {% endif %}
+            </div>
+        </section>
+
+        <!-- SECCIÓN: Papelera (Elementos Inactivos) -->
+        <section id="sec-papelera" class="section-content fade-in">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6">🗑️ Papelera - Registros Inactivos</h2>
+            
+            <!-- Doctores Inactivos -->
+            <div class="mb-8">
+                <h3 class="text-lg font-bold text-slate-700 mb-4">👨‍⚕️ Doctores Dados de Baja</h3>
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-red-50 text-xs uppercase text-red-700 font-bold">
+                            <tr>
+                                <th class="p-4">Doctor</th>
+                                <th class="p-4">Especialidad</th>
+                                <th class="p-4">Contacto</th>
+                                <th class="p-4 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for d in doctores_inactivos %}
+                            <tr class="hover:bg-slate-50 opacity-60">
+                                <td class="p-4 font-bold text-slate-600">{{ d.nombre }}</td>
+                                <td class="p-4 text-slate-500">{{ d.especialidad }}</td>
+                                <td class="p-4 text-xs text-slate-400">
+                                    {% if d.telefono %}📱 {{ d.telefono }}<br>{% endif %}
+                                    {% if d.correo %}✉️ {{ d.correo }}{% endif %}
+                                </td>
+                                <td class="p-4 text-right">
+                                    <button onclick="restaurarDoctor({{ d.id }})" 
+                                            class="text-green-600 hover:underline font-semibold">
+                                        ↻ Restaurar
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="p-8 text-center text-slate-400 italic">No hay doctores inactivos.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pacientes Inactivos -->
+            <div>
+                <h3 class="text-lg font-bold text-slate-700 mb-4">👥 Pacientes Dados de Baja</h3>
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-red-50 text-xs uppercase text-red-700 font-bold">
+                            <tr>
+                                <th class="p-4">CI</th>
+                                <th class="p-4">Nombre</th>
+                                <th class="p-4">Contacto</th>
+                                <th class="p-4 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for p in pacientes_inactivos %}
+                            <tr class="hover:bg-slate-50 opacity-60">
+                                <td class="p-4 font-mono font-bold text-slate-600">{{ p.ci }}</td>
+                                <td class="p-4 font-bold text-slate-600">{{ p.nombre }}</td>
+                                <td class="p-4 text-slate-500">+591 {{ p.telefono }}</td>
+                                <td class="p-4 text-right">
+                                    <button onclick="restaurarPaciente({{ p.id }})" 
+                                            class="text-green-600 hover:underline font-semibold">
+                                        ↻ Restaurar
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" class="p-8 text-center text-slate-400 italic">No hay pacientes inactivos.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
@@ -749,6 +836,146 @@
                 }
             }
         }
+
+        // --- FUNCIONES DE RESTAURACIÓN ---
+        async function restaurarPaciente(id) {
+            const res = await Swal.fire({
+                title: '¿Restaurar Paciente?',
+                text: "El paciente volverá a estar activo en el sistema.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, restaurar',
+                cancelButtonText: 'Cancelar'
+            });
+            
+            if(res.isConfirmed) {
+                try {
+                    const fd = new FormData();
+                    fd.append('pac_id', id);
+                    const response = await fetch('/admin/paciente/restaurar', { 
+                        method: 'POST', 
+                        body: fd 
+                    });
+                    
+                    if(response.ok) {
+                        // Guardar el estado de la sección actual antes de recargar
+                        localStorage.setItem('lastSection', 'pacientes');
+                        localStorage.setItem('justRestored', 'true');
+                        
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Restaurado',
+                            text: 'El paciente ha sido restaurado exitosamente',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        
+                        // Recargar la página
+                        location.reload();
+                    } else {
+                        await Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo restaurar el paciente'
+                        });
+                    }
+                } catch(error) {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Ocurrió un error al intentar restaurar'
+                    });
+                }
+            }
+        }
+
+        async function restaurarDoctor(id) {
+            const res = await Swal.fire({
+                title: '¿Restaurar Doctor?',
+                text: "El doctor volverá a estar activo en el sistema.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, restaurar',
+                cancelButtonText: 'Cancelar'
+            });
+            
+            if(res.isConfirmed) {
+                try {
+                    const fd = new FormData();
+                    fd.append('doc_id', id);
+                    const response = await fetch('/admin/doctor/restaurar', { 
+                        method: 'POST', 
+                        body: fd 
+                    });
+                    
+                    if(response.ok) {
+                        // Guardar el estado de la sección actual antes de recargar
+                        localStorage.setItem('lastSection', 'doctores');
+                        localStorage.setItem('justRestored', 'true');
+                        
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Restaurado',
+                            text: 'El doctor ha sido restaurado exitosamente',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        
+                        // Recargar la página
+                        location.reload();
+                    } else {
+                        await Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo restaurar el doctor'
+                        });
+                    }
+                } catch(error) {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Ocurrió un error al intentar restaurar'
+                    });
+                }
+            }
+        }
+
+        // Forzar que el sidebar mantenga su ancho
+        function forceKeepSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if(sidebar) {
+                sidebar.style.width = '16rem';
+                sidebar.style.minWidth = '16rem';
+                sidebar.style.maxWidth = '16rem';
+                sidebar.style.flexShrink = '0';
+            }
+        }
+
+        // Al cargar la página, restaurar la última sección visitada y mantener sidebar
+        window.addEventListener('DOMContentLoaded', function() {
+            // Forzar ancho del sidebar
+            forceKeepSidebar();
+            
+            const lastSection = localStorage.getItem('lastSection');
+            const justRestored = localStorage.getItem('justRestored');
+            
+            if(justRestored === 'true' && lastSection) {
+                // Limpiar el flag
+                localStorage.removeItem('justRestored');
+                localStorage.removeItem('lastSection');
+                
+                // Mostrar la sección guardada
+                showSection(lastSection);
+            }
+        });
+
+        // Mantener el sidebar fijo después de cualquier cambio
+        window.addEventListener('load', forceKeepSidebar);
+        window.addEventListener('resize', forceKeepSidebar);
 
         // Cerrar modales con ESC
         document.addEventListener('keydown', function(e) {
