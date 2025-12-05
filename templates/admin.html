@@ -234,6 +234,25 @@
                     + Nuevo Paciente
                 </button>
             </div>
+            
+            <!-- Buscador de Pacientes -->
+            <div class="mb-4 bg-white p-4 rounded-lg shadow-sm">
+                <div class="flex gap-3 items-center">
+                    <div class="flex-1 relative">
+                        <input type="text" 
+                               id="searchPaciente" 
+                               placeholder="🔍 Buscar paciente por CI (Ejemplo: 9878542)" 
+                               class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition font-mono text-lg"
+                               oninput="filtrarPacientes()">
+                        <span id="resultadoCount" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold"></span>
+                    </div>
+                    <button onclick="limpiarBusqueda()" 
+                            class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg font-bold transition">
+                        Limpiar
+                    </button>
+                </div>
+            </div>
+
             <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                 <table class="w-full text-sm text-left">
                     <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-bold">
@@ -245,9 +264,9 @@
                             <th class="p-4 text-right">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="divide-y divide-slate-100" id="tablaPacientes">
                         {% for p in pacientes %}
-                        <tr class="hover:bg-slate-50">
+                        <tr class="hover:bg-slate-50 fila-paciente" data-ci="{{ p.ci }}">
                             <td class="p-4 font-mono font-bold">{{ p.ci }}</td>
                             <td class="p-4 font-bold">{{ p.nombre }}</td>
                             <td class="p-4 text-slate-500">+591 {{ p.telefono }}</td>
@@ -1121,6 +1140,37 @@
         // Mantener el sidebar fijo después de cualquier cambio
         window.addEventListener('load', forceKeepSidebar);
         window.addEventListener('resize', forceKeepSidebar);
+
+        // BUSCADOR DE PACIENTES POR CI
+        function filtrarPacientes() {
+            const searchInput = document.getElementById('searchPaciente').value.trim().toLowerCase();
+            const filas = document.querySelectorAll('.fila-paciente');
+            let visibles = 0;
+            
+            filas.forEach(fila => {
+                const ci = fila.getAttribute('data-ci').toLowerCase();
+                
+                if (searchInput === '' || ci.includes(searchInput)) {
+                    fila.style.display = '';
+                    visibles++;
+                } else {
+                    fila.style.display = 'none';
+                }
+            });
+            
+            // Actualizar contador
+            const contador = document.getElementById('resultadoCount');
+            if (searchInput !== '') {
+                contador.textContent = `${visibles} resultado${visibles !== 1 ? 's' : ''}`;
+            } else {
+                contador.textContent = '';
+            }
+        }
+
+        function limpiarBusqueda() {
+            document.getElementById('searchPaciente').value = '';
+            filtrarPacientes();
+        }
 
         // Cerrar modales con ESC
         document.addEventListener('keydown', function(e) {
