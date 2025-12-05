@@ -730,6 +730,8 @@
                 });
                 
                 if(response.ok) {
+                    localStorage.setItem('lastSection', 'doctores');
+                    localStorage.setItem('justSaved', 'true');
                     await Swal.fire({
                         icon: 'success',
                         title: 'Guardado',
@@ -737,8 +739,7 @@
                         timer: 1500,
                         showConfirmButton: false
                     });
-                    cerrarModalDoctor();
-                    showSection('doctores');
+                    location.reload();
                 } else {
                     await Swal.fire({
                         icon: 'error',
@@ -779,6 +780,8 @@
                     const data = await response.json();
                     
                     if(response.ok) {
+                        localStorage.setItem('lastSection', 'doctores');
+                        localStorage.setItem('justSaved', 'true');
                         await Swal.fire({
                             icon: 'success',
                             title: 'Eliminado',
@@ -786,7 +789,7 @@
                             timer: 1500,
                             showConfirmButton: false
                         });
-                        showSection('doctores');
+                        location.reload();
                     } else {
                         await Swal.fire({
                             icon: 'error',
@@ -862,6 +865,8 @@
                 });
                 
                 if(response.ok) {
+                    localStorage.setItem('lastSection', 'pacientes');
+                    localStorage.setItem('justSaved', 'true');
                     await Swal.fire({
                         icon: 'success',
                         title: 'Actualizado',
@@ -869,8 +874,7 @@
                         timer: 1500,
                         showConfirmButton: false
                     });
-                    cerrarModalPaciente();
-                    showSection('pacientes');
+                    location.reload();
                 } else {
                     await Swal.fire({
                         icon: 'error',
@@ -899,6 +903,8 @@
                 });
                 
                 if(response.ok) {
+                    localStorage.setItem('lastSection', 'pacientes');
+                    localStorage.setItem('justSaved', 'true');
                     await Swal.fire({
                         icon: 'success',
                         title: 'Registrado',
@@ -906,9 +912,7 @@
                         timer: 1500,
                         showConfirmButton: false
                     });
-                    document.getElementById('modalNuevoPaciente').classList.add('hidden');
-                    this.reset();
-                    showSection('pacientes');
+                    location.reload();
                 } else {
                     await Swal.fire({
                         icon: 'error',
@@ -949,6 +953,8 @@
                     const data = await response.json();
                     
                     if(response.ok) {
+                        localStorage.setItem('lastSection', 'pacientes');
+                        localStorage.setItem('justSaved', 'true');
                         await Swal.fire({
                             icon: 'success',
                             title: 'Paciente Inactivo',
@@ -956,7 +962,7 @@
                             timer: 1500,
                             showConfirmButton: false
                         });
-                        showSection('pacientes');
+                        location.reload();
                     } else {
                         await Swal.fire({
                             icon: 'error',
@@ -1099,10 +1105,12 @@
             
             const lastSection = localStorage.getItem('lastSection');
             const justRestored = localStorage.getItem('justRestored');
+            const justSaved = localStorage.getItem('justSaved');
             
-            if(justRestored === 'true' && lastSection) {
-                // Limpiar el flag
+            if((justRestored === 'true' || justSaved === 'true') && lastSection) {
+                // Limpiar los flags
                 localStorage.removeItem('justRestored');
+                localStorage.removeItem('justSaved');
                 localStorage.removeItem('lastSection');
                 
                 // Mostrar la sección guardada
