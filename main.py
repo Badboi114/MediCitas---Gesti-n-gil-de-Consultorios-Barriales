@@ -148,6 +148,7 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
     # Obtener INACTIVOS para la papelera
     pacientes_inactivos = db.query(models.Paciente).filter(models.Paciente.activo == False).all()
     doctores_inactivos = db.query(models.Doctor).filter(models.Doctor.activo == False).all()
+    citas_inactivas = db.query(models.Cita).filter(models.Cita.activo == False).all()
     
     # Obtener datos del admin actual
     admin_data = db.query(models.Admin).first()
@@ -164,6 +165,7 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         "doctores": doctores,
         "pacientes_inactivos": pacientes_inactivos,
         "doctores_inactivos": doctores_inactivos,
+        "citas_inactivas": citas_inactivas,
         "config": config,
         "admin": admin_data,
         "stats": {"total": total_citas, "docs": total_doctores, "pacs": total_pacientes}
@@ -402,6 +404,16 @@ async def restaurar_doctor(doc_id: int = Form(...), db: Session = Depends(get_db
         return JSONResponse({"status": "ok"})
     return JSONResponse({"status": "error", "msg": "Doctor no encontrado"}, status_code=404)
 
+@app.post("/admin/cita/restaurar")
+async def restaurar_cita(cita_id: int = Form(...), db: Session = Depends(get_db)):
+    """Restaurar cita inactiva"""
+    cita = db.query(models.Cita).filter(models.Cita.id == cita_id).first()
+    if cita:
+        cita.activo = True
+        db.commit()
+        return JSONResponse({"status": "ok"})
+    return JSONResponse({"status": "error", "msg": "Cita no encontrada"}, status_code=404)
+
 # --- APIS EXISTENTES (Sin cambios mayores) ---
 
 @app.get("/api/citas/{doctor_id}")
@@ -616,9 +628,10 @@ async def borrar_cita(request: Request, db: Session = Depends(get_db)):
     cita = db.query(models.Cita).filter(models.Cita.id == cita_id).first()
     
     if cita:
-        db.delete(cita)
+        # Soft delete: marcar como inactivo en lugar de eliminar
+        cita.activo = False
         db.commit()
-        print(f"--> [BORRAR] ✓ Cita {cita_id} eliminada con éxito")
+        print(f"--> [BORRAR] ✓ Cita {cita_id} marcada como inactiva")
         return JSONResponse(content={"status": "ok", "msg": "Eliminado"})
     
     print(f"--> [BORRAR] ✗ Cita {cita_id} no encontrada en BD")
