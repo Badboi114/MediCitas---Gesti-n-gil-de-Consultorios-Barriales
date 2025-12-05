@@ -457,7 +457,7 @@
     <div id="modalDoctor" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center z-50 backdrop-blur-sm">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-96 transform transition-all">
             <h3 id="modalDocTitle" class="text-lg font-bold text-slate-800 mb-4">Nuevo Especialista</h3>
-            <form action="/admin/doctor/guardar" method="POST" class="space-y-4">
+            <form id="formDoctor" class="space-y-4">
                 <input type="hidden" name="doc_id" id="docId">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1">Nombre y Apellido</label>
@@ -532,7 +532,7 @@
     <div id="modalNuevoPaciente" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center z-50 backdrop-blur-sm">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-[400px]">
             <h3 class="text-lg font-bold mb-4 text-slate-800">👤 Registrar Nuevo Paciente</h3>
-            <form action="/admin/paciente/crear" method="POST" class="space-y-3">
+            <form id="formNuevoPaciente" class="space-y-3">
                 <input type="text" name="ci" required placeholder="Cédula de Identidad" 
                        class="w-full border rounded p-2 outline-none focus:border-blue-500">
                 <input type="text" name="nombre" required placeholder="Nombre Completo" 
@@ -609,7 +609,7 @@
     <div id="modalPaciente" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center z-50 backdrop-blur-sm">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-[500px] max-h-[90vh] overflow-y-auto transform transition-all">
             <h3 id="modalPacTitle" class="text-lg font-bold text-slate-800 mb-4">Editar Paciente</h3>
-            <form action="/admin/paciente/guardar" method="POST" class="space-y-4">
+            <form id="formPaciente" class="space-y-4">
                 <input type="hidden" name="pac_id" id="pacId">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1">Carnet de Identidad (CI)</label>
@@ -718,6 +718,43 @@
             document.getElementById('modalDoctor').classList.remove('hidden');
         }
 
+        // Manejador del formulario de doctor
+        document.getElementById('formDoctor').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/admin/doctor/guardar', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if(response.ok) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Guardado',
+                        text: 'Doctor guardado exitosamente',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    cerrarModalDoctor();
+                    showSection('doctores');
+                } else {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo guardar el doctor'
+                    });
+                }
+            } catch(error) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Ocurrió un error al guardar'
+                });
+            }
+        });
+
         async function borrarDoctor(id) {
             const res = await Swal.fire({
                 title: '¿Eliminar Doctor?',
@@ -746,9 +783,10 @@
                             icon: 'success',
                             title: 'Eliminado',
                             text: 'El doctor ha sido eliminado correctamente',
-                            timer: 2000
+                            timer: 1500,
+                            showConfirmButton: false
                         });
-                        location.reload();
+                        showSection('doctores');
                     } else {
                         await Swal.fire({
                             icon: 'error',
@@ -812,6 +850,81 @@
             document.getElementById('modalPaciente').classList.add('hidden');
         }
 
+        // Manejador del formulario de editar paciente
+        document.getElementById('formPaciente').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/admin/paciente/guardar', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if(response.ok) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Actualizado',
+                        text: 'Paciente actualizado exitosamente',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    cerrarModalPaciente();
+                    showSection('pacientes');
+                } else {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo actualizar el paciente'
+                    });
+                }
+            } catch(error) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Ocurrió un error al actualizar'
+                });
+            }
+        });
+
+        // Manejador del formulario de nuevo paciente
+        document.getElementById('formNuevoPaciente').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/admin/paciente/crear', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if(response.ok) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Registrado',
+                        text: 'Paciente registrado exitosamente',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    document.getElementById('modalNuevoPaciente').classList.add('hidden');
+                    this.reset();
+                    showSection('pacientes');
+                } else {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo registrar el paciente'
+                    });
+                }
+            } catch(error) {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Ocurrió un error al registrar'
+                });
+            }
+        });
+
         async function borrarPaciente(id) {
             const res = await Swal.fire({
                 title: '¿Dar de Baja al Paciente?',
@@ -840,9 +953,10 @@
                             icon: 'success',
                             title: 'Paciente Inactivo',
                             text: 'El paciente ha sido dado de baja del sistema',
-                            timer: 2000
+                            timer: 1500,
+                            showConfirmButton: false
                         });
-                        location.reload();
+                        showSection('pacientes');
                     } else {
                         await Swal.fire({
                             icon: 'error',
