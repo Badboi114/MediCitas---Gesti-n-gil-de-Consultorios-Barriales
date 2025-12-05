@@ -18,6 +18,19 @@
             max-width: 16rem !important;
             flex-shrink: 0 !important;
             z-index: 1000 !important;
+            overflow-x: visible !important;
+        }
+        
+        /* Forzar que todos los textos del sidebar sean visibles */
+        #sidebar * {
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        #sidebar p,
+        #sidebar span,
+        #sidebar button {
+            white-space: nowrap !important;
         }
         
         /* Ajustar el contenido principal para que no se superponga con el sidebar */
