@@ -177,7 +177,8 @@ async def admin_dashboard(request: Request, db: Session = Depends(get_db)):
 async def update_admin_profile(
     request: Request,
     username: str = Form(...),
-    password: str = Form(...),
+    password: str = Form(""),  # Puede estar vacío si no se quiere cambiar
+    current_password: str = Form(...),
     db: Session = Depends(get_db)
 ):
     """Actualizar credenciales del administrador"""
@@ -186,9 +187,21 @@ async def update_admin_profile(
     
     admin = db.query(models.Admin).first()
     if admin:
+        # VALIDACIÓN CRÍTICA: Verificar contraseña actual
+        if admin.password != current_password:
+            # La contraseña actual NO coincide - RECHAZAR
+            request.session["error_message"] = "Contraseña actual incorrecta"
+            return RedirectResponse(url="/admin", status_code=303)
+        
+        # Actualizar username
         admin.username = username
-        admin.password = password
+        
+        # Solo actualizar contraseña si se proporcionó una nueva
+        if password and password.strip():
+            admin.password = password
+        
         db.commit()
+        
         # Actualizar sesión con nuevo username
         request.session["user"] = username
     

@@ -34,7 +34,7 @@
         
         {% if es_admin %}
         <a href="/admin" class="bg-slate-800 text-white text-xs px-4 py-2 rounded-full font-bold hover:bg-slate-700 transition shadow-lg flex items-center gap-2">
-            ⚙️ Volver al Panel Admin
+            Volver al Panel Admin
         </a>
         {% else %}
         <a href="/" class="text-xs text-slate-400 hover:text-emerald-600">Volver al Inicio</a>
@@ -82,7 +82,7 @@
             <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
                 <div>
                     <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        📅 Gestión de Cita
+                        Gestión de Cita
                     </h2>
                     <p class="text-xs text-emerald-600 font-medium mt-1 capitalize" id="modalFechaTitulo">Fecha</p>
                 </div>
@@ -109,7 +109,7 @@
                         <div class="relative">
                             <label class="text-xs font-bold text-slate-500">Cédula Identidad (Busca auto.)</label>
                             <input type="number" id="ci" class="w-full bg-slate-50 border-b-2 p-2 outline-none focus:border-emerald-500 transition-colors" required placeholder="Ingrese CI...">
-                            <span id="msgUsuarioEncontrado" class="hidden absolute right-0 top-6 text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">✓ Encontrado</span>
+                            <span id="msgUsuarioEncontrado" class="hidden absolute right-0 top-6 text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">Encontrado</span>
                         </div>
 
                         <div>
@@ -127,8 +127,8 @@
                     </div>
 
                     <button type="button" onclick="toggleHistorialSide()" id="btnToggleHistorial" class="w-full py-2 px-3 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold flex justify-between items-center hover:bg-blue-100 transition-colors border border-blue-100">
-                        <span>📋 Ver Expediente / Historial Médico</span>
-                        <span>👉</span>
+                        <span>Ver Expediente / Historial Médico</span>
+                        <span>»</span>
                     </button>
 
                     <div>
@@ -152,17 +152,17 @@
 
                     <div class="space-y-4 text-sm">
                         <div>
-                            <label class="block text-[10px] font-bold text-red-500 uppercase mb-1">⚠️ Alergias</label>
+                            <label class="block text-[10px] font-bold text-red-500 uppercase mb-1">Alergias</label>
                             <input type="text" id="alergias" class="w-full p-2 border border-red-100 bg-red-50 rounded text-slate-700 focus:border-red-300 outline-none" placeholder="Ninguna conocida">
                         </div>
                         
                         <div>
-                            <label class="block text-[10px] font-bold text-blue-500 uppercase mb-1">🏥 Cirugías Previas</label>
+                            <label class="block text-[10px] font-bold text-blue-500 uppercase mb-1">Cirugías Previas</label>
                             <input type="text" id="cirugias" class="w-full p-2 border border-blue-100 bg-blue-50 rounded text-slate-700 focus:border-blue-300 outline-none" placeholder="Ninguna">
                         </div>
 
                         <div class="flex-grow flex flex-col">
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">📝 Notas Médicas / Antecedentes</label>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Notas Médicas / Antecedentes</label>
                             <textarea id="notas" class="w-full flex-grow p-3 border border-slate-200 bg-white rounded text-slate-600 focus:border-emerald-300 outline-none resize-none min-h-[150px]" placeholder="Escriba aquí antecedentes importantes, medicación actual, etc..."></textarea>
                         </div>
                     </div>
@@ -196,7 +196,7 @@
                 
                 panelHistorial.classList.remove('hidden');
                 
-                btn.innerHTML = `<span>« Ocultar Expediente</span> <span>📕</span>`;
+                btn.innerHTML = `<span>« Ocultar Expediente</span> <span>«</span>`;
                 btn.classList.replace('bg-blue-50', 'bg-slate-100');
                 btn.classList.replace('text-blue-600', 'text-slate-600');
             } else {
@@ -206,7 +206,7 @@
                 modalContainer.classList.remove('max-w-5xl');
                 modalContainer.classList.add('max-w-lg'); // Ancho normal
                 
-                btn.innerHTML = `<span>📋 Ver Expediente / Historial Médico</span> <span>👉</span>`;
+                btn.innerHTML = `<span>Ver Expediente / Historial Médico</span> <span>»</span>`;
                 btn.classList.replace('bg-slate-100', 'bg-blue-50');
                 btn.classList.replace('text-slate-600', 'text-blue-600');
             }
@@ -251,7 +251,7 @@
             modalContainer.classList.remove('max-w-5xl');
             modalContainer.classList.add('max-w-lg');
             const btn = document.getElementById('btnToggleHistorial');
-            btn.innerHTML = `<span>📋 Ver Expediente / Historial Médico</span> <span>👉</span>`;
+            btn.innerHTML = `<span>Ver Expediente / Historial Médico</span> <span>»</span>`;
 
             if (modo === 'nuevo') {
                 document.getElementById('citaId').value = '';
@@ -414,6 +414,24 @@
             // Validaciones Regex (igual que antes)
             if (!/^\d{5,12}$/.test(document.getElementById('ci').value)) return Swal.fire('Error CI', 'CI inválido', 'warning');
             if (!/^[67]\d{7}$/.test(document.getElementById('telefono').value)) return Swal.fire('Error Celular', 'Celular inválido', 'warning');
+
+            // COPIAR motivo de consulta a notas médicas antes de guardar
+            const motivoConsulta = document.getElementById('motivo').value;
+            const notasActuales = document.getElementById('notas').value;
+            
+            // Si hay motivo y las notas están vacías o no contienen el motivo, agregarlo
+            if (motivoConsulta && motivoConsulta.trim()) {
+                const fechaActual = new Date().toLocaleDateString('es-ES');
+                const nuevaNota = `[${fechaActual}] Motivo de consulta: ${motivoConsulta}`;
+                
+                if (notasActuales && notasActuales.trim()) {
+                    // Si ya hay notas, agregar el motivo al final
+                    document.getElementById('notas').value = notasActuales + '\n\n' + nuevaNota;
+                } else {
+                    // Si no hay notas, simplemente poner el motivo
+                    document.getElementById('notas').value = nuevaNota;
+                }
+            }
 
             const fIso = `${fechaActualDia.toISOString().split('T')[0]}`;
             const fd = new FormData();

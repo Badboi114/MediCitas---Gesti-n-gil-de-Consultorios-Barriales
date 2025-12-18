@@ -70,29 +70,29 @@
         <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
             <p class="px-3 text-xs font-bold text-slate-500 uppercase mb-2 mt-2">General</p>
             <button onclick="showSection('dashboard')" class="nav-item w-full text-left p-3 rounded hover:bg-slate-800 transition flex items-center gap-3 active">
-                📊 Dashboard
+                Dashboard
             </button>
             <button onclick="showSection('config')" class="nav-item w-full text-left p-3 rounded hover:bg-slate-800 transition flex items-center gap-3">
-                ⚙️ Configuración Global
+                Configuración Global
             </button>
 
             <p class="px-3 text-xs font-bold text-slate-500 uppercase mb-2 mt-6">Gestión</p>
             <button onclick="showSection('doctores')" class="nav-item w-full text-left p-3 rounded hover:bg-slate-800 transition flex items-center gap-3">
-                👨‍⚕️ Elementos (Doctores)
+                Elementos (Doctores)
             </button>
             <button onclick="showSection('pacientes')" class="nav-item w-full text-left p-3 rounded hover:bg-slate-800 transition flex items-center gap-3">
-                👥 Pacientes & Historia
+                Pacientes & Historia
             </button>
             <button onclick="showSection('citas')" class="nav-item w-full text-left p-3 rounded hover:bg-slate-800 transition flex items-center gap-3">
-                📅 Auditoría de Citas
+                Auditoría de Citas
             </button>
             <button onclick="showSection('papelera')" class="nav-item w-full text-left p-3 rounded hover:bg-slate-800 transition flex items-center gap-3">
-                🗑️ Papelera (Inactivos)
+                Papelera (Inactivos)
             </button>
             
             <p class="px-3 text-xs font-bold text-slate-500 uppercase mb-2 mt-6">Cuenta</p>
             <button onclick="showSection('perfil')" class="nav-item w-full text-left p-3 rounded hover:bg-slate-800 transition flex items-center gap-3">
-                🔐 Mi Perfil / Seguridad
+                Mi Perfil / Seguridad
             </button>
         </nav>
 
@@ -130,7 +130,7 @@
 
         <!-- SECCIÓN: Configuración Global -->
         <section id="sec-config" class="section-content fade-in max-w-2xl">
-            <h2 class="text-2xl font-bold text-slate-800 mb-6">⚙️ Configuración Global</h2>
+            <h2 class="text-2xl font-bold text-slate-800 mb-6">Configuración Global</h2>
             <div class="bg-white p-8 rounded-xl shadow-sm">
                 <form action="/admin/config" method="POST" class="space-y-6">
                     <div class="grid grid-cols-2 gap-6">
@@ -173,7 +173,7 @@
         <!-- SECCIÓN: Elementos (Doctores) -->
         <section id="sec-doctores" class="section-content fade-in">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-slate-800">👨‍⚕️ Gestión de Elementos (Personal Médico)</h2>
+                <h2 class="text-2xl font-bold text-slate-800">Gestión de Elementos (Personal Médico)</h2>
                 <button onclick="abrirModalDoctor()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold shadow-md transition">
                     + Nuevo Especialista
                 </button>
@@ -228,7 +228,7 @@
         <!-- SECCIÓN: Pacientes -->
         <section id="sec-pacientes" class="section-content fade-in">
             <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-slate-800">👥 Directorio de Pacientes e Historiales Clínicos</h2>
+                <h2 class="text-2xl font-bold text-slate-800">Directorio de Pacientes e Historiales Clínicos</h2>
                 <button onclick="document.getElementById('modalNuevoPaciente').classList.remove('hidden')" 
                         class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow-md transition">
                     + Nuevo Paciente
@@ -241,7 +241,7 @@
                     <div class="flex-1 relative">
                         <input type="text" 
                                id="searchPaciente" 
-                               placeholder="🔍 Buscar paciente por CI (Ejemplo: 9878542)" 
+                               placeholder="Buscar paciente por CI (Ejemplo: 9878542)" 
                                class="w-full px-4 py-3 border-2 border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition font-mono text-lg"
                                oninput="filtrarPacientes()">
                         <span id="resultadoCount" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold"></span>
@@ -272,10 +272,10 @@
                             <td class="p-4 text-slate-500">+591 {{ p.telefono }}</td>
                             <td class="p-4">
                                 {% if p.alergias and p.alergias != 'Ninguna conocida' %}
-                                <span class="text-red-500 text-xs block">⚠️ {{ p.alergias }}</span>
+                                <span class="text-red-500 text-xs block">{{ p.alergias }}</span>
                                 {% endif %}
                                 {% if p.cirugias and p.cirugias != 'Ninguna' %}
-                                <span class="text-blue-500 text-xs block">🏥 {{ p.cirugias }}</span>
+                                <span class="text-blue-500 text-xs block">{{ p.cirugias }}</span>
                                 {% endif %}
                                 {% if p.notas_medicas %}
                                 <span class="text-slate-400 text-xs italic truncate block max-w-xs">{{ p.notas_medicas }}</span>
@@ -301,7 +301,7 @@
 
         <!-- SECCIÓN: Auditoría de Citas -->
         <section id="sec-citas" class="section-content fade-in">
-            <h2 class="text-2xl font-bold text-slate-800 mb-6">📅 Auditoría de Citas (Vista Tabular)</h2>
+            <h2 class="text-2xl font-bold text-slate-800 mb-6">Auditoría de Citas (Vista Tabular)</h2>
             <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                 <table class="w-full text-sm text-left">
                     <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-bold">
@@ -347,11 +347,11 @@
 
         <!-- SECCIÓN: Papelera (Elementos Inactivos) -->
         <section id="sec-papelera" class="section-content fade-in">
-            <h2 class="text-2xl font-bold text-slate-800 mb-6">🗑️ Papelera - Registros Inactivos</h2>
+            <h2 class="text-2xl font-bold text-slate-800 mb-6">Papelera - Registros Inactivos</h2>
             
             <!-- Doctores Inactivos -->
             <div class="mb-8">
-                <h3 class="text-lg font-bold text-slate-700 mb-4">👨‍⚕️ Doctores Dados de Baja</h3>
+                <h3 class="text-lg font-bold text-slate-700 mb-4">Doctores Dados de Baja</h3>
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
                     <table class="w-full text-sm text-left">
                         <thead class="bg-red-50 text-xs uppercase text-red-700 font-bold">
@@ -368,8 +368,8 @@
                                 <td class="p-4 font-bold text-slate-600">{{ d.nombre }}</td>
                                 <td class="p-4 text-slate-500">{{ d.especialidad }}</td>
                                 <td class="p-4 text-xs text-slate-400">
-                                    {% if d.telefono %}📱 {{ d.telefono }}<br>{% endif %}
-                                    {% if d.correo %}✉️ {{ d.correo }}{% endif %}
+                                    {% if d.telefono %}{{ d.telefono }}<br>{% endif %}
+                                    {% if d.correo %}{{ d.correo }}{% endif %}
                                 </td>
                                 <td class="p-4 text-right">
                                     <button onclick="restaurarDoctor({{ d.id }})" 
@@ -388,7 +388,7 @@
 
             <!-- Pacientes Inactivos -->
             <div>
-                <h3 class="text-lg font-bold text-slate-700 mb-4">👥 Pacientes Dados de Baja</h3>
+                <h3 class="text-lg font-bold text-slate-700 mb-4">Pacientes Dados de Baja</h3>
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
                     <table class="w-full text-sm text-left">
                         <thead class="bg-red-50 text-xs uppercase text-red-700 font-bold">
@@ -419,11 +419,58 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Citas Eliminadas -->
+            <div class="mt-8">
+                <h3 class="text-lg font-bold text-slate-700 mb-4">Citas Eliminadas</h3>
+                <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-orange-50 text-xs uppercase text-orange-700 font-bold">
+                            <tr>
+                                <th class="p-4">ID</th>
+                                <th class="p-4">Doctor</th>
+                                <th class="p-4">Paciente</th>
+                                <th class="p-4">Fecha y Hora</th>
+                                <th class="p-4">Motivo</th>
+                                <th class="p-4 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            {% for c in citas_inactivas %}
+                            <tr class="hover:bg-slate-50 opacity-60">
+                                <td class="p-4 font-mono text-slate-600">#{{ c.id }}</td>
+                                <td class="p-4 text-slate-600">
+                                    <div class="font-bold">{{ c.doctor.nombre }}</div>
+                                    <div class="text-xs text-slate-400">{{ c.doctor.especialidad }}</div>
+                                </td>
+                                <td class="p-4 text-slate-600">
+                                    <div class="font-bold">{{ c.paciente.nombre }}</div>
+                                    <div class="text-xs text-slate-400">CI: {{ c.paciente.ci }}</div>
+                                </td>
+                                <td class="p-4 text-slate-600">
+                                    <div class="font-semibold">{{ c.fecha_inicio.strftime('%d/%m/%Y') }}</div>
+                                    <div class="text-xs text-slate-400">{{ c.fecha_inicio.strftime('%H:%M') }} - {{ c.fecha_fin.strftime('%H:%M') }}</div>
+                                </td>
+                                <td class="p-4 text-slate-500">{{ c.motivo or 'Sin especificar' }}</td>
+                                <td class="p-4 text-right">
+                                    <button onclick="restaurarCita({{ c.id }})" 
+                                            class="text-green-600 hover:underline font-semibold">
+                                        ↻ Restaurar
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" class="p-8 text-center text-slate-400 italic">No hay citas eliminadas.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </section>
 
         <!-- SECCIÓN: Mi Perfil / Seguridad -->
         <section id="sec-perfil" class="section-content fade-in max-w-2xl mx-auto">
-            <h2 class="text-2xl font-bold text-slate-800 mb-6 text-center">🔐 Gestionar Credenciales de Administrador</h2>
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 text-center">Gestionar Credenciales de Administrador</h2>
             <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-emerald-500">
                 <div class="flex items-center justify-center mb-8">
                     <div class="bg-gradient-to-br from-emerald-100 to-emerald-200 p-6 rounded-full shadow-inner">
@@ -439,28 +486,64 @@
                     </p>
                 </div>
 
-                <form action="/admin/perfil" method="POST" class="space-y-6">
+                <form id="formPerfil" action="/admin/perfil" method="POST" class="space-y-6">
                     <div>
                         <label class="block text-sm font-bold text-slate-600 mb-2">Nombre de Usuario</label>
                         <input type="text" name="username" value="{{ admin.username }}" required
                                class="w-full p-3 border-2 border-slate-200 rounded-lg bg-slate-50 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition font-semibold">
                         <p class="text-xs text-slate-400 mt-1">Este será tu nuevo nombre de usuario para iniciar sesión</p>
                     </div>
+
+                    <hr class="border-slate-200">
+                    
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                        <p class="text-sm text-blue-700 font-bold">
+                            🔐 Para cambiar cualquier credencial, debe ingresar su contraseña actual
+                        </p>
+                    </div>
+                    
                     <div>
-                        <label class="block text-sm font-bold text-slate-600 mb-2">Contraseña</label>
-                        <input type="text" name="password" value="{{ admin.password }}" required
-                               class="w-full p-3 border-2 border-slate-200 rounded-lg bg-slate-50 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition font-mono">
-                        <p class="text-xs text-slate-400 mt-1">Puede modificar su contraseña actual o establecer una nueva</p>
+                        <label class="block text-sm font-bold text-slate-600 mb-2">Contraseña Actual <span class="text-red-500">*</span></label>
+                        <input type="password" id="current_password" name="current_password" required
+                               autocomplete="current-password"
+                               value=""
+                               class="w-full p-3 border-2 border-red-200 rounded-lg bg-red-50 outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 transition font-mono"
+                               placeholder="Ingrese su contraseña actual para continuar">
+                        <p class="text-xs text-red-500 mt-1 hidden" id="errorCurrentPassword">⚠️ La contraseña actual no coincide</p>
+                    </div>
+
+                    <hr class="border-slate-200">
+                    <p class="text-sm font-bold text-slate-700">Cambiar Contraseña (Opcional)</p>
+                    <p class="text-xs text-slate-500">Deje estos campos vacíos si NO desea cambiar la contraseña</p>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-2">Nueva Contraseña</label>
+                        <input type="password" id="new_password" name="password" minlength="4"
+                               autocomplete="new-password"
+                               value=""
+                               class="w-full p-3 border-2 border-slate-200 rounded-lg bg-slate-50 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition font-mono"
+                               placeholder="Dejar vacío para mantener la contraseña actual">
+                        <p class="text-xs text-slate-400 mt-1">Mínimo 4 caracteres si desea cambiarla</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-bold text-slate-600 mb-2">Confirmar Nueva Contraseña</label>
+                        <input type="password" id="confirm_password" minlength="4"
+                               autocomplete="new-password"
+                               value=""
+                               class="w-full p-3 border-2 border-slate-200 rounded-lg bg-slate-50 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition font-mono"
+                               placeholder="Repetir la nueva contraseña">
+                        <p class="text-xs text-red-500 mt-1 hidden" id="errorConfirmPassword">⚠️ Las contraseñas no coinciden</p>
                     </div>
                     
                     <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
                         <p class="text-sm text-amber-700">
-                            ⚠️ <strong>Importante:</strong> Asegúrese de recordar las nuevas credenciales. No hay recuperación automática.
+                            <strong>Importante:</strong> Asegúrese de recordar las nuevas credenciales. No hay recuperación automática.
                         </p>
                     </div>
 
                     <button type="submit" class="w-full py-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg hover:from-emerald-700 hover:to-emerald-800 font-bold shadow-lg hover:shadow-xl transform active:scale-95 transition text-lg">
-                        💾 Actualizar Credenciales
+                        Actualizar Credenciales
                     </button>
                 </form>
 
@@ -518,7 +601,7 @@
                 </div>
                 
                 <hr class="my-2">
-                <p class="text-xs font-bold text-slate-500 mb-2">⏰ Horario Personalizado (Dejar vacío para usar horario global)</p>
+                <p class="text-xs font-bold text-slate-500 mb-2">Horario Personalizado (Dejar vacío para usar horario global)</p>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-400 mb-1">Hora Entrada</label>
@@ -531,7 +614,7 @@
                                class="w-full border rounded p-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                     </div>
                 </div>
-                <p class="text-xs text-amber-600 mt-1">💡 Si se define, este horario sobrescribe el global solo para este doctor</p>
+                <p class="text-xs text-amber-600 mt-1">Si se define, este horario sobrescribe el global solo para este doctor</p>
                 
                 <div class="flex gap-2 pt-4">
                     <button type="button" onclick="cerrarModalDoctor()" 
@@ -550,7 +633,7 @@
     <!-- Modal Nuevo Paciente -->
     <div id="modalNuevoPaciente" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center z-50 backdrop-blur-sm">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-[400px]">
-            <h3 class="text-lg font-bold mb-4 text-slate-800">👤 Registrar Nuevo Paciente</h3>
+            <h3 class="text-lg font-bold mb-4 text-slate-800">Registrar Nuevo Paciente</h3>
             <form id="formNuevoPaciente" class="space-y-3">
                 <input type="text" name="ci" required placeholder="Cédula de Identidad" 
                        class="w-full border rounded p-2 outline-none focus:border-blue-500">
@@ -578,7 +661,7 @@
     <div id="modalDetallePaciente" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center z-50 backdrop-blur-sm">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-[500px] max-h-[90vh] overflow-y-auto transform transition-all">
             <div class="flex justify-between items-start mb-4">
-                <h3 class="text-lg font-bold text-slate-800">📋 Expediente del Paciente</h3>
+                <h3 class="text-lg font-bold text-slate-800">Expediente del Paciente</h3>
                 <button onclick="cerrarModalDetallePaciente()" class="text-slate-400 hover:text-slate-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -599,15 +682,15 @@
                     <p id="detalleTelefono" class="text-lg text-slate-700">-</p>
                 </div>
                 <div class="bg-red-50 p-4 rounded-lg border-l-4 border-red-500">
-                    <label class="text-xs font-bold text-red-600 uppercase">⚠️ Alergias</label>
+                    <label class="text-xs font-bold text-red-600 uppercase">Alergias</label>
                     <p id="detalleAlergias" class="text-sm text-red-700 mt-1">-</p>
                 </div>
                 <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
-                    <label class="text-xs font-bold text-blue-600 uppercase">🏥 Cirugías Previas</label>
+                    <label class="text-xs font-bold text-blue-600 uppercase">Cirugías Previas</label>
                     <p id="detalleCirugias" class="text-sm text-blue-700 mt-1">-</p>
                 </div>
                 <div class="bg-slate-50 p-4 rounded-lg">
-                    <label class="text-xs font-bold text-slate-500 uppercase">📝 Notas Médicas</label>
+                    <label class="text-xs font-bold text-slate-500 uppercase">Notas Médicas</label>
                     <p id="detalleNotas" class="text-sm text-slate-700 mt-1 whitespace-pre-wrap">-</p>
                 </div>
             </div>
@@ -648,19 +731,19 @@
                            placeholder="Ej: 75644345">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-red-500 mb-1">⚠️ Alergias Conocidas</label>
+                    <label class="block text-xs font-bold text-red-500 mb-1">Alergias Conocidas</label>
                     <textarea name="alergias" id="pacAlergias" rows="2" 
                               class="w-full border rounded p-2 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200"
                               placeholder="Ej: Penicilina, Polen..."></textarea>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-blue-500 mb-1">🏥 Cirugías Previas</label>
+                    <label class="block text-xs font-bold text-blue-500 mb-1">Cirugías Previas</label>
                     <textarea name="cirugias" id="pacCirugias" rows="2" 
                               class="w-full border rounded p-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                               placeholder="Ej: Apendicectomía 2020..."></textarea>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">📝 Notas Médicas</label>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Notas Médicas</label>
                     <textarea name="notas" id="pacNotas" rows="3" 
                               class="w-full border rounded p-2 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
                               placeholder="Observaciones generales..."></textarea>
@@ -701,6 +784,23 @@
             const btn = document.querySelector(`button[onclick="showSection('${id}')"]`);
             if(btn) {
                 btn.classList.add('active');
+            }
+            
+            // LIMPIAR campos de contraseña cuando se abre la sección de perfil
+            if(id === 'perfil') {
+                setTimeout(() => {
+                    const currentPwd = document.getElementById('current_password');
+                    const newPwd = document.getElementById('new_password');
+                    const confirmPwd = document.getElementById('confirm_password');
+                    
+                    if(currentPwd) currentPwd.value = '';
+                    if(newPwd) newPwd.value = '';
+                    if(confirmPwd) confirmPwd.value = '';
+                    
+                    // Ocultar mensajes de error
+                    document.getElementById('errorCurrentPassword')?.classList.add('hidden');
+                    document.getElementById('errorConfirmPassword')?.classList.add('hidden');
+                }, 50);
             }
         }
 
@@ -1106,6 +1206,59 @@
             }
         }
 
+        async function restaurarCita(id) {
+            const res = await Swal.fire({
+                title: '¿Restaurar Cita?',
+                text: "La cita volverá a aparecer en el calendario.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Sí, restaurar',
+                cancelButtonText: 'Cancelar'
+            });
+            
+            if(res.isConfirmed) {
+                try {
+                    const fd = new FormData();
+                    fd.append('cita_id', id);
+                    const response = await fetch('/admin/cita/restaurar', { 
+                        method: 'POST', 
+                        body: fd 
+                    });
+                    
+                    if(response.ok) {
+                        // Guardar el estado de la sección actual antes de recargar
+                        localStorage.setItem('lastSection', 'papelera');
+                        localStorage.setItem('justRestored', 'true');
+                        
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Restaurado',
+                            text: 'La cita ha sido restaurada exitosamente',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        
+                        // Recargar la página
+                        location.reload();
+                    } else {
+                        await Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo restaurar la cita'
+                        });
+                    }
+                } catch(error) {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Ocurrió un error al intentar restaurar'
+                    });
+                }
+            }
+        }
+
         // Forzar que el sidebar mantenga su ancho
         function forceKeepSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -1135,6 +1288,26 @@
                 // Mostrar la sección guardada
                 showSection(lastSection);
             }
+            
+            // LIMPIAR SIEMPRE los campos de contraseña al cargar la página
+            setTimeout(() => {
+                const currentPwd = document.getElementById('current_password');
+                const newPwd = document.getElementById('new_password');
+                const confirmPwd = document.getElementById('confirm_password');
+                
+                if(currentPwd) {
+                    currentPwd.value = '';
+                    currentPwd.setAttribute('value', '');
+                }
+                if(newPwd) {
+                    newPwd.value = '';
+                    newPwd.setAttribute('value', '');
+                }
+                if(confirmPwd) {
+                    confirmPwd.value = '';
+                    confirmPwd.setAttribute('value', '');
+                }
+            }, 100);
         });
 
         // Mantener el sidebar fijo después de cualquier cambio
@@ -1171,6 +1344,118 @@
             document.getElementById('searchPaciente').value = '';
             filtrarPacientes();
         }
+
+        // Validación del formulario de perfil/seguridad
+        document.getElementById('formPerfil')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('current_password').value;
+            const newPassword = document.getElementById('new_password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            // Ocultar errores previos
+            document.getElementById('errorCurrentPassword').classList.add('hidden');
+            document.getElementById('errorConfirmPassword').classList.add('hidden');
+            
+            // VALIDACIÓN OBLIGATORIA: Contraseña actual siempre requerida
+            if (!currentPassword || currentPassword.trim() === '') {
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Contraseña Requerida',
+                    text: 'Debe ingresar su contraseña actual para realizar cambios'
+                });
+                return;
+            }
+            
+            // Validar que la contraseña actual sea correcta
+            const actualPassword = "{{ admin.password }}";
+            if (currentPassword !== actualPassword) {
+                document.getElementById('errorCurrentPassword').classList.remove('hidden');
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Autenticación',
+                    text: 'La contraseña actual es incorrecta. No se pueden realizar cambios.',
+                    confirmButtonColor: '#dc2626'
+                });
+                return;
+            }
+            
+            // Si se ingresó una nueva contraseña, validar
+            if (newPassword || confirmPassword) {
+                // Validar que ambos campos estén llenos
+                if (!newPassword || !confirmPassword) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'Campos Incompletos',
+                        text: 'Debe llenar ambos campos de nueva contraseña o dejarlos vacíos'
+                    });
+                    return;
+                }
+                
+                // Validar que las nuevas contraseñas coincidan
+                if (newPassword !== confirmPassword) {
+                    document.getElementById('errorConfirmPassword').classList.remove('hidden');
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Error de Validación',
+                        text: 'Las contraseñas nuevas no coinciden'
+                    });
+                    return;
+                }
+                
+                // Validar longitud mínima
+                if (newPassword.length < 4) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'Contraseña Débil',
+                        text: 'La contraseña debe tener al menos 4 caracteres'
+                    });
+                    return;
+                }
+            }
+            
+            // Preparar mensaje de confirmación
+            let cambios = [];
+            const usernameActual = "{{ admin.username }}";
+            const newUsername = document.querySelector('[name="username"]').value;
+            
+            if (newUsername !== usernameActual) {
+                cambios.push(`Usuario: <strong>${newUsername}</strong>`);
+            }
+            
+            if (newPassword && newPassword !== actualPassword) {
+                cambios.push('Contraseña: <strong>Se cambiará</strong>');
+            }
+            
+            if (cambios.length === 0) {
+                await Swal.fire({
+                    icon: 'info',
+                    title: 'Sin Cambios',
+                    text: 'No se detectaron cambios en las credenciales'
+                });
+                return;
+            }
+            
+            // Confirmar cambio
+            const result = await Swal.fire({
+                icon: 'question',
+                title: '¿Confirmar Cambios?',
+                html: `<p class="text-sm mb-3">Está a punto de actualizar:</p>
+                       <div class="text-left bg-slate-50 p-3 rounded">
+                           ${cambios.map(c => `<p class="text-sm">• ${c}</p>`).join('')}
+                       </div>`,
+                showCancelButton: true,
+                confirmButtonText: 'Sí, actualizar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#059669',
+                cancelButtonColor: '#6b7280'
+            });
+            
+            if (result.isConfirmed) {
+                // Enviar formulario
+                this.submit();
+            }
+        });
 
         // Cerrar modales con ESC
         document.addEventListener('keydown', function(e) {

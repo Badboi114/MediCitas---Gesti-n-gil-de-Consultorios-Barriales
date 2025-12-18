@@ -54,7 +54,9 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
                         </svg>
                     </div>
-                    <input type="password" name="password" required
+                    <input type="password" id="password" name="password" required
+                           autocomplete="current-password"
+                           value=""
                            class="w-full pl-12 pr-4 py-3 border-2 border-slate-200 rounded-xl bg-slate-50 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 transition" 
                            placeholder="••••••••">
                 </div>
@@ -83,6 +85,26 @@
     <div class="absolute bottom-4 text-center w-full text-slate-400 text-sm">
         Sistema v2.0 | Arquitectura Modular
     </div>
+
+    <script>
+        // Limpiar campo de contraseña al cargar la página
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const passwordField = document.getElementById('password');
+                if(passwordField) {
+                    passwordField.value = '';
+                    passwordField.setAttribute('value', '');
+                }
+            }, 50);
+        });
+
+        // Limpiar también al enfocar el campo
+        document.getElementById('password')?.addEventListener('focus', function() {
+            if(this.value && this.value.length > 0) {
+                this.value = '';
+            }
+        });
+    </script>
 
 </body>
 </html>
